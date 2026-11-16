@@ -73,9 +73,10 @@
       background-image: radial-gradient(rgba(124, 74, 45, 0.06) 1px, transparent 0);
       background-size: 24px 24px;
     }
-    .dark .antique-bg-dark {
-      background-color: #140D0A;
-      background-image: radial-gradient(rgba(212, 175, 55, 0.05) 1px, transparent 0);
+    html.dark .antique-bg-light,
+    html.dark body {
+      background-color: #120B08 !important;
+      background-image: radial-gradient(rgba(212, 175, 55, 0.06) 1px, transparent 0) !important;
       background-size: 24px 24px;
     }
 
@@ -89,12 +90,12 @@
   </style>
 </head>
 
-<body class="antique-bg-light dark:antique-bg-dark text-[#2C1E16] dark:text-[#EDE2D5] min-h-screen transition-colors duration-300 font-sans antialiased">
+<body class="antique-bg-light bg-[#FAF6F0] dark:bg-[#120B08] text-[#2C1E16] dark:text-[#EDE2D5] min-h-screen transition-colors duration-300 font-sans antialiased">
 
   <!-- ===================================================================== -->
   <!-- 로그인 / 회원가입 게이트 (사이트 접속 시 인증 필수) -->
   <!-- ===================================================================== -->
-  <div id="loginGateOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-parchment-50/95 dark:bg-espresso-950/95 backdrop-blur-md p-4 overflow-y-auto">
+  <div id="loginGateOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-parchment-50/95 dark:bg-[#120B08]/95 backdrop-blur-md p-4 overflow-y-auto">
     <div class="w-full max-w-md rounded-3xl border border-parchment-300 dark:border-espresso-700 bg-white/95 dark:bg-espresso-900 p-7 sm:p-8 shadow-2xl space-y-6 my-auto">
       <!-- 상단 앤틱 엠블럼 & 타이틀 -->
       <div class="text-center space-y-2">
@@ -214,7 +215,7 @@
   <!-- ===================================================================== -->
   <!-- 상단 네비게이션 바 -->
   <!-- ===================================================================== -->
-  <header class="sticky top-0 z-40 backdrop-blur-md bg-parchment-50/90 dark:bg-espresso-950/90 border-b border-parchment-200 dark:border-espresso-700 shadow-xs">
+  <header class="sticky top-0 z-40 backdrop-blur-md bg-parchment-50/90 dark:bg-[#120B08]/92 border-b border-parchment-200 dark:border-espresso-700 shadow-xs">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
       <!-- 로고 영역 -->
       <div class="flex items-center gap-3">
@@ -650,10 +651,13 @@
       </form>
 
       <!-- 등록된 태그 목록 -->
-      <div class="mt-5 space-y-4 max-h-80 overflow-y-auto pr-1">
+      <div class="mt-4 flex items-center justify-between text-[11px] text-[#7A6252] dark:text-[#A38E7D]">
+        <span><i class="fa-solid fa-pen mr-1 text-brass-500"></i>연필 아이콘을 누르면 태그 이름을 수정할 수 있으며, 연결된 모든 노래에 일괄 반영됩니다.</span>
+      </div>
+      <div class="mt-3 space-y-4 max-h-80 overflow-y-auto pr-1">
         <div>
-          <h4 class="text-xs font-bold uppercase tracking-wider text-brass-600 dark:text-brass-400 mb-2">
-            <i class="fa-solid fa-music mr-1"></i> 노래 제목 태그 (원곡-커버 묶음)
+          <h4 class="text-xs font-bold uppercase tracking-wider text-mahogany-800 dark:text-brass-400 mb-2">
+            <i class="fa-solid fa-music mr-1"></i> 노래 제목 태그 (원곡-커버 연결용)
           </h4>
           <div id="managerListSongTitle" class="flex flex-wrap gap-2"></div>
         </div>
@@ -966,6 +970,7 @@
       selectedFilterTagIds: new Set(),
       formSelectedTagIds: new Set(),
       formSelectedSongTitleTagId: null,
+      editingTagId: null,
       darkMode: false
     };
 
@@ -1374,10 +1379,12 @@
 
       if (isDark) {
         htmlEl.classList.add('dark');
+        document.body.style.backgroundColor = '#120B08';
         if (iconEl) iconEl.innerHTML = '<i class="fa-solid fa-sun"></i>';
         if (labelEl) labelEl.textContent = '라이트 (양피지)';
       } else {
         htmlEl.classList.remove('dark');
+        document.body.style.backgroundColor = '#FAF6F0';
         if (iconEl) iconEl.innerHTML = '<i class="fa-solid fa-moon"></i>';
         if (labelEl) labelEl.textContent = '다크 (에스프레소)';
       }
@@ -1390,16 +1397,8 @@
     };
 
     // =========================================================================
-    // 4. 모달 공통 열기 / 닫기
+    // 4. 공용 모달 열기 / 닫기
     // =========================================================================
-    window.closeModal = function(modalId) {
-      const el = document.getElementById(modalId);
-      if (el) {
-        el.classList.add('hidden');
-        el.classList.remove('flex');
-      }
-    };
-
     function openModal(modalId) {
       const el = document.getElementById(modalId);
       if (el) {
@@ -1407,6 +1406,14 @@
         el.classList.add('flex');
       }
     }
+
+    window.closeModal = function(modalId) {
+      const el = document.getElementById(modalId);
+      if (el) {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      }
+    };
 
     window.toggleSetupGuideModal = function(show) {
       if (show) openModal('setupGuideModal');
@@ -1980,9 +1987,10 @@
     };
 
     // =========================================================================
-    // 8. 태그 전용 관리 모달
+    // 8. 태그 전용 관리 모달 (추가 · 이름 일괄 수정 · 삭제)
     // =========================================================================
     window.openTagManagerModal = function() {
+      state.editingTagId = null;
       renderTagManagerLists();
       openModal('tagManagerModal');
     };
@@ -2007,17 +2015,99 @@
           return;
         }
 
-        container.innerHTML = items.map(tag => `
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-850 text-xs font-medium">
-            <span>#${escapeHtml(tag.name)}</span>
-            <button type="button" onclick="deleteTag('${escapeHtml(tag.id)}')" title="태그 삭제"
-              class="text-red-500 hover:text-red-700 ml-0.5">
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </span>
-        `).join('');
+        container.innerHTML = items.map(tag => {
+          if (state.editingTagId === tag.id) {
+            return `
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl border border-brass-500 bg-white dark:bg-espresso-800 text-xs shadow-xs">
+                <input type="text" id="editTagInput-${escapeHtml(tag.id)}" value="${escapeHtml(tag.name)}"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault(); saveEditedTag('${escapeHtml(tag.id)}');} else if(event.key==='Escape'){event.preventDefault(); cancelEditTag();}"
+                  class="w-28 sm:w-36 px-1.5 py-0.5 rounded bg-parchment-50 dark:bg-espresso-900 border border-parchment-300 dark:border-espresso-700 text-mahogany-800 dark:text-[#F5E9DA] focus:outline-none focus:border-brass-500" />
+                <button type="button" onclick="saveEditedTag('${escapeHtml(tag.id)}')" title="수정 저장"
+                  class="px-2 py-0.5 rounded bg-mahogany-700 dark:bg-brass-600 text-white font-semibold hover:opacity-90">
+                  저장
+                </button>
+                <button type="button" onclick="cancelEditTag()" title="취소"
+                  class="px-1.5 py-0.5 rounded border border-parchment-300 dark:border-espresso-700 text-[#7A6252] dark:text-[#A38E7D] hover:bg-parchment-100 dark:hover:bg-espresso-700">
+                  취소
+                </button>
+              </span>
+            `;
+          }
+
+          const linkedCount = state.songs.filter(
+            s => s.songTitleTagId === tag.id || (s.tagIds || []).includes(tag.id)
+          ).length;
+
+          return `
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-850 text-xs font-medium">
+              <span>#${escapeHtml(tag.name)}</span>
+              <span class="text-[10px] text-[#8C7362]">(${linkedCount})</span>
+              <button type="button" onclick="startEditTag('${escapeHtml(tag.id)}')" title="태그 이름 수정 (적용된 노래에 일괄 반영)"
+                class="text-mahogany-700 dark:text-brass-400 hover:opacity-75 ml-0.5">
+                <i class="fa-solid fa-pen text-[10px]"></i>
+              </button>
+              <button type="button" onclick="deleteTag('${escapeHtml(tag.id)}')" title="태그 삭제"
+                class="text-red-500 hover:text-red-700 ml-0.5">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </span>
+          `;
+        }).join('');
       });
     }
+
+    window.startEditTag = function(tagId) {
+      state.editingTagId = tagId;
+      renderTagManagerLists();
+      const inputEl = document.getElementById(`editTagInput-${tagId}`);
+      if (inputEl) {
+        inputEl.focus();
+        inputEl.select();
+      }
+    };
+
+    window.cancelEditTag = function() {
+      state.editingTagId = null;
+      renderTagManagerLists();
+    };
+
+    window.saveEditedTag = async function(tagId) {
+      const tag = state.tags.find(t => t.id === tagId);
+      const inputEl = document.getElementById(`editTagInput-${tagId}`);
+      if (!tag || !inputEl) return;
+
+      const newName = inputEl.value.trim();
+      if (!newName) {
+        showToast('변경할 태그 이름을 입력해 주세요.', true);
+        return;
+      }
+
+      if (newName === tag.name) {
+        state.editingTagId = null;
+        renderTagManagerLists();
+        return;
+      }
+
+      const duplicate = state.tags.find(
+        t => t.id !== tagId && t.category === tag.category && t.name.toLowerCase() === newName.toLowerCase()
+      );
+      if (duplicate) {
+        showToast('같은 분류에 이미 동일한 이름의 태그가 있습니다.', true);
+        return;
+      }
+
+      try {
+        await setDoc(publicDoc('tags', tagId), { name: newName }, { merge: true });
+        tag.name = newName;
+        state.editingTagId = null;
+        renderTagManagerLists();
+        renderAll();
+        showToast(`'#${newName}'(으)로 수정되어 적용된 모든 노래에 일괄 반영되었습니다.`);
+      } catch (err) {
+        console.error('Edit tag error:', err);
+        showToast('태그 수정 중 오류가 발생했습니다.', true);
+      }
+    };
 
     window.handleAddTagFromManager = async function(e) {
       e.preventDefault();
