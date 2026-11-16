@@ -231,7 +231,7 @@
             <span id="headerSyncDot" title="실시간 공용 DB 동기화 활성" class="w-2 h-2 rounded-full bg-emerald-500"></span>
           </div>
           <p id="headerSyncStatusText" class="text-[11px] text-[#7A6252] dark:text-[#A38E7D] mt-0.5 tracking-wide">
-            실시간 공용 앤틱 노래 보관함 (v2.4)
+            실시간 공용 앤틱 노래 보관함 (v2.6)
           </p>
         </div>
       </div>
@@ -394,11 +394,15 @@
 
         <!-- 텍스트 검색창 + 필터 초기화 -->
         <div class="flex items-center gap-2 w-full md:w-auto">
-          <div class="relative flex-1 md:w-72">
+          <div class="relative flex-1 md:w-80">
             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C7362] text-xs"></i>
-            <input type="text" id="searchInput" oninput="renderLibrary()"
-              placeholder="곡 제목, 메모, 곡 그룹 검색..."
-              class="w-full pl-9 pr-4 py-2 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white/80 dark:bg-espresso-850 text-sm focus:outline-none focus:border-brass-500 transition" />
+            <input type="text" id="searchInput" oninput="renderLibrary()" oncompositionend="renderLibrary()"
+              placeholder="곡 제목, #태그명, 메모 검색..."
+              class="w-full pl-9 pr-8 py-2 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white/80 dark:bg-espresso-850 text-sm focus:outline-none focus:border-brass-500 transition" />
+            <button type="button" id="clearSearchBtn" onclick="clearSearchInput()" title="검색어 지우기"
+              class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8C7362] hover:text-mahogany-800 dark:hover:text-brass-400 text-xs p-1">
+              <i class="fa-solid fa-circle-xmark"></i>
+            </button>
           </div>
           <button type="button" id="resetFilterBtn" onclick="resetFilters()"
             class="hidden px-3 py-2 rounded-xl border border-mahogany-600/40 dark:border-brass-500/40 text-xs font-medium text-mahogany-700 dark:text-brass-400 hover:bg-parchment-200 dark:hover:bg-espresso-800 transition whitespace-nowrap">
@@ -975,50 +979,6 @@
       darkMode: false
     };
 
-    // 수동 샘플 불러오기 버튼 클릭 시에만 사용되는 샘플 데이터
-    const INITIAL_SEED_TAGS = [
-      { id: 'tag-title-lemon', name: 'Lemon', category: 'songTitle' },
-      { id: 'tag-title-nightdancer', name: 'NIGHT DANCER', category: 'songTitle' },
-      { id: 'tag-artist-kenshi', name: '요네즈 켄시', category: 'artist' },
-      { id: 'tag-artist-imase', name: 'imase', category: 'artist' },
-      { id: 'tag-cover-dazbee', name: '다즈비 (DAZBEE)', category: 'cover' },
-      { id: 'tag-genre-jpop', name: 'J-Pop', category: 'genre' },
-      { id: 'tag-genre-ballad', name: '발라드', category: 'genre' }
-    ];
-
-    const INITIAL_SEED_SONGS = [
-      {
-        id: 'song-seed-1',
-        title: '米津玄師 - Lemon (Official MV)',
-        videoId: 'SX_ViT4Ra7k',
-        memo: '원곡 키 · 감성적인 피아노 & 스트링 사운드',
-        tagIds: ['tag-artist-kenshi', 'tag-genre-jpop', 'tag-genre-ballad'],
-        songTitleTagId: 'tag-title-lemon',
-        isOriginal: true,
-        createdAt: Date.now() - 3600000 * 3
-      },
-      {
-        id: 'song-seed-2',
-        title: 'Lemon - 요네즈 켄시 (다즈비 Cover)',
-        videoId: '9P2G3fX9_lM',
-        memo: '여자 키 커버 버전 · 맑은 음색',
-        tagIds: ['tag-artist-kenshi', 'tag-cover-dazbee', 'tag-genre-jpop', 'tag-genre-ballad'],
-        songTitleTagId: 'tag-title-lemon',
-        isOriginal: false,
-        createdAt: Date.now() - 3600000 * 2
-      },
-      {
-        id: 'song-seed-3',
-        title: 'imase - NIGHT DANCER (MV)',
-        videoId: 'kagoEGKHZvU',
-        memo: '리듬감 좋은 드라이브 추천곡',
-        tagIds: ['tag-artist-imase', 'tag-genre-jpop'],
-        songTitleTagId: 'tag-title-nightdancer',
-        isOriginal: true,
-        createdAt: Date.now() - 3600000
-      }
-    ];
-
     // =========================================================================
     // 유틸리티 함수
     // =========================================================================
@@ -1134,7 +1094,6 @@
               state.currentUserId = savedUid;
             }
           } else if (!state.users.some(u => u.id === state.currentUserId)) {
-            // 계정이 삭제된 경우 로그아웃 처리
             state.currentUserId = null;
             localStorage.removeItem(SESSION_STORAGE_KEY);
           }
@@ -1148,7 +1107,7 @@
           console.error('Users snapshot error:', err);
         });
 
-        // 실시간 리스너 2: 노래 목록 (자동 시드 생성 없이 DB 상태 그대로 유지)
+        // 실시간 리스너 2: 노래 목록
         onSnapshot(publicCol('songs'), (snapshot) => {
           const list = [];
           snapshot.forEach((docSnap) => {
@@ -1171,7 +1130,6 @@
           });
           state.tags = list;
 
-          // 삭제된 태그가 필터에 남아 있으면 정리
           const validIds = new Set(list.map(t => t.id));
           for (const fid of Array.from(state.selectedFilterTagIds)) {
             if (!validIds.has(fid)) state.selectedFilterTagIds.delete(fid);
@@ -1427,109 +1385,217 @@
     function renderAll() {
       const syncStatusEl = document.getElementById('headerSyncStatusText');
       if (syncStatusEl && state.dbReady) {
-        syncStatusEl.textContent = `클라우드 DB 실시간 동기화 중 (v2.4) · 총 ${state.songs.length}곡 저장됨`;
+        syncStatusEl.textContent = `클라우드 DB 실시간 동기화 중 (v2.6) · 총 ${state.songs.length}곡 저장됨`;
       }
       renderCarousels();
       renderFilterBars();
       renderLibrary();
     }
 
-    window.loadSampleDataManual = async function() {
-      if (!state.fbUser) return;
-      try {
-        for (const tag of INITIAL_SEED_TAGS) {
-          await setDoc(publicDoc('tags', tag.id), tag);
-        }
-        for (const song of INITIAL_SEED_SONGS) {
-          await setDoc(publicDoc('songs', song.id), song);
-        }
-        showToast('샘플 노래 3곡과 기본 태그를 불러왔습니다.');
-      } catch (err) {
-        console.error('Manual seed error:', err);
-        showToast('샘플 데이터 불러오기 중 오류가 발생했습니다.', true);
-      }
-    };
-
     function renderCarousels() {
-      const recentContainer = document.getElementById('recentCarousel');
-      const popularContainer = document.getElementById('popularCarousel');
+      const recentEl = document.getElementById('recentCarousel');
+      const popularEl = document.getElementById('popularCarousel');
+      if (!recentEl || !popularEl) return;
+
       const me = getCurrentUser();
+      const myUid = me ? me.id : null;
 
       if (state.songs.length === 0) {
-        const emptyMsg = `
-          <div class="w-full py-10 px-4 text-center rounded-2xl border border-dashed border-parchment-300 dark:border-espresso-700 space-y-3">
-            <p class="text-sm text-[#8C7362]">아직 등록된 노래가 없습니다. 우측 상단의 <strong>[노래 추가]</strong> 버튼을 눌러 첫 레코드를 등록해 보세요!</p>
-            <button type="button" onclick="loadSampleDataManual()"
-              class="px-3.5 py-1.5 rounded-xl border border-mahogany-600/40 dark:border-brass-500/40 text-xs font-semibold text-mahogany-700 dark:text-brass-400 hover:bg-parchment-200 dark:hover:bg-espresso-800 transition">
-              <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>체험용 샘플 노래 3곡 채우기
-            </button>
+        const emptyHtml = `
+          <div class="w-full py-10 text-center rounded-2xl border border-dashed border-parchment-300 dark:border-espresso-700 text-xs text-[#7A6252] dark:text-[#A38E7D]">
+            아직 등록된 노래가 없습니다. 우측 상단의 <strong>[+ 노래 추가]</strong> 버튼으로 첫 번째 레코드를 등록해 보세요!
           </div>
         `;
-        recentContainer.innerHTML = emptyMsg;
-        popularContainer.innerHTML = `<div class="w-full py-10 text-center rounded-2xl border border-dashed border-parchment-300 dark:border-espresso-700 text-sm text-[#8C7362]">아직 청취 기록이 없습니다.</div>`;
+        recentEl.innerHTML = emptyHtml;
+        popularEl.innerHTML = emptyHtml;
         return;
       }
 
-      // 1) 최근에 추가한 노래 (최신순 정렬)
+      // 1) 최근에 추가한 노래 순
       const recentSongs = [...state.songs].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      recentContainer.innerHTML = recentSongs
-        .map(song => buildSongCardHtml(song, { isCarousel: true }))
-        .join('');
+      recentEl.innerHTML = recentSongs.map(song => buildSongCardHtml(song, { isCarousel: true })).join('');
 
-      // 2) 현재 이용자가 자주 찾아본 노래 (개인 청취 횟수 내림차순)
-      const uid = me ? me.id : null;
-      const popularSongs = [...state.songs]
-        .map(song => ({ song, count: getUserSongCount(uid, song.id) }))
-        .sort((a, b) => b.count - a.count || (b.song.createdAt || 0) - (a.song.createdAt || 0));
-
-      popularContainer.innerHTML = popularSongs
-        .map(item => buildSongCardHtml(item.song, { isCarousel: true, personalCount: item.count }))
-        .join('');
+      // 2) 현재 이용자가 가장 많이 찾아서 들어간 노래 순
+      const popularSongs = [...state.songs].sort((a, b) => {
+        const countB = myUid ? getUserSongCount(myUid, b.id) : getTotalSongCount(b.id);
+        const countA = myUid ? getUserSongCount(myUid, a.id) : getTotalSongCount(a.id);
+        if (countB !== countA) return countB - countA;
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+      popularEl.innerHTML = popularSongs.map(song => buildSongCardHtml(song, { isCarousel: true })).join('');
     }
 
     window.slideCarousel = function(containerId, direction) {
       const container = document.getElementById(containerId);
       if (!container) return;
-      const scrollAmount = Math.max(container.clientWidth * 0.85, 300);
-      container.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+      const step = Math.max(280, Math.floor(container.clientWidth * 0.85));
+      container.scrollBy({ left: direction * step, behavior: 'smooth' });
     };
 
+    function buildSongCardHtml(song, { isCarousel = false } = {}) {
+      const me = getCurrentUser();
+      const myCount = me ? getUserSongCount(me.id, song.id) : getTotalSongCount(song.id);
+      const thumbUrl = `https://i.ytimg.com/vi/${encodeURIComponent(song.videoId)}/hqdefault.jpg`;
+
+      // 노래 제목 태그 및 일반 태그 조합
+      const titleTag = song.songTitleTagId ? state.tags.find(t => t.id === song.songTitleTagId) : null;
+      const normalTags = (song.tagIds || [])
+        .map(tid => state.tags.find(t => t.id === tid))
+        .filter(Boolean);
+
+      const widthClass = isCarousel
+        ? 'snap-start shrink-0 w-[85%] sm:w-[47%] lg:w-[31.8%]'
+        : 'w-full';
+
+      return `
+        <article
+          onclick="openDetailModal('${escapeHtml(song.id)}')"
+          onmouseenter="startCardPreview(this, '${escapeHtml(song.videoId)}')"
+          onmouseleave="stopCardPreview(this)"
+          class="antique-card group cursor-pointer rounded-2xl border border-parchment-300/80 dark:border-espresso-700 bg-white/95 dark:bg-espresso-900/95 shadow-sm hover:shadow-xl hover:border-brass-500/70 overflow-hidden flex flex-col justify-between ${widthClass}">
+
+          <div>
+            <!-- 16:9 썸네일 & 호버 유튜브 미리보기 컨테이너 -->
+            <div class="relative aspect-video w-full bg-espresso-950 overflow-hidden">
+              <img
+                src="${thumbUrl}"
+                alt="${escapeHtml(song.title)}"
+                loading="lazy"
+                onerror="this.src='https://placehold.co/640x360/2B1E17/D4AF37?text=No+Thumbnail'"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+
+              <!-- 마우스 오버 시 즉석 생성되는 유튜브 미리보기 iframe 레이어 -->
+              <div class="preview-slot absolute inset-0 pointer-events-none hidden"></div>
+
+              <!-- 상단 배지 (원곡 배지 + 노래 제목 태그 + 개인 청취 횟수) -->
+              <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5 pointer-events-none">
+                <div class="flex items-center gap-1 flex-wrap">
+                  ${song.isOriginal ? `
+                    <span class="px-2 py-0.5 rounded-md bg-mahogany-700/95 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-[10px] font-bold tracking-wider shadow-sm">
+                      ORIGINAL
+                    </span>
+                  ` : ''}
+                  ${titleTag ? `
+                    <span class="px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-brass-300 border border-brass-400/40 text-[10px] font-semibold shadow-sm">
+                      <i class="fa-solid fa-music mr-1 text-[9px]"></i>${escapeHtml(titleTag.name)}
+                    </span>
+                  ` : ''}
+                </div>
+
+                <span class="px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-parchment-100 text-[10px] font-semibold shadow-sm shrink-0">
+                  <i class="fa-solid fa-headphones mr-1 text-brass-400"></i>${myCount}회
+                </span>
+              </div>
+
+              <!-- 하단 호버 안내 뱃지 -->
+              <div class="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/75 text-[10px] text-parchment-200 opacity-90 group-hover:opacity-0 transition-opacity pointer-events-none">
+                <i class="fa-solid fa-play mr-1 text-brass-400"></i>커서 올리면 미리보기
+              </div>
+            </div>
+
+            <!-- 카드 본문 -->
+            <div class="p-4 space-y-2">
+              <h3 class="font-serif text-base sm:text-lg font-bold text-mahogany-800 dark:text-[#F5E9DA] line-clamp-1 group-hover:text-mahogany-600 dark:group-hover:text-brass-400 transition-colors">
+                ${escapeHtml(song.title)}
+              </h3>
+
+              ${song.memo ? `
+                <p class="text-xs text-[#6D5444] dark:text-[#B8A392] line-clamp-1">
+                  <i class="fa-regular fa-note-sticky mr-1 text-brass-600 dark:text-brass-500"></i>${escapeHtml(song.memo)}
+                </p>
+              ` : `
+                <p class="text-xs text-[#9E8777] dark:text-[#6E5B4D] italic">메모 없음</p>
+              `}
+            </div>
+          </div>
+
+          <!-- 하단 태그 칩 목록 -->
+          <div class="px-4 pb-4 pt-1 flex flex-wrap gap-1.5">
+            ${normalTags.length > 0 ? normalTags.slice(0, 5).map(tag => `
+              <span onclick="event.stopPropagation(); toggleFilterTag('${escapeHtml(tag.id)}')"
+                class="px-2 py-0.5 rounded-md text-[11px] font-medium border transition ${getTagBadgeStyle(tag.category)}">
+                #${escapeHtml(tag.name)}
+              </span>
+            `).join('') : `
+              <span class="text-[11px] text-[#9E8777] dark:text-[#6E5B4D]">태그 없음</span>
+            `}
+          </div>
+        </article>
+      `;
+    }
+
+    function getTagBadgeStyle(category) {
+      switch (category) {
+        case 'songTitle':
+          return 'bg-brass-500/15 border-brass-500/40 text-mahogany-800 dark:text-brass-300 hover:bg-brass-500/25';
+        case 'artist':
+          return 'bg-mahogany-700/10 dark:bg-brass-500/15 border-mahogany-600/30 dark:border-brass-500/30 text-mahogany-800 dark:text-brass-400 hover:bg-mahogany-700/20';
+        case 'cover':
+          return 'bg-amber-800/10 dark:bg-amber-500/15 border-amber-700/30 dark:border-amber-500/30 text-amber-900 dark:text-amber-300 hover:bg-amber-800/20';
+        case 'genre':
+        default:
+          return 'bg-stone-700/10 dark:bg-stone-400/15 border-stone-600/25 dark:border-stone-500/30 text-stone-800 dark:text-stone-300 hover:bg-stone-700/20';
+      }
+    }
+
+    // 초경량 On-Demand 마우스 호버 유튜브 미리보기 (커서 올릴 때만 iframe 생성, 떼면 즉시 제거)
+    window.startCardPreview = function(cardEl, videoId) {
+      const slot = cardEl.querySelector('.preview-slot');
+      if (!slot || !videoId) return;
+      clearTimeout(cardEl._hoverTimer);
+      cardEl._hoverTimer = setTimeout(() => {
+        slot.innerHTML = `
+          <iframe
+            class="w-full h-full"
+            src="https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1"
+            title="YouTube Preview"
+            frameborder="0"
+            allow="autoplay; encrypted-media">
+          </iframe>
+        `;
+        slot.classList.remove('hidden');
+      }, 320);
+    };
+
+    window.stopCardPreview = function(cardEl) {
+      clearTimeout(cardEl._hoverTimer);
+      const slot = cardEl.querySelector('.preview-slot');
+      if (slot) {
+        slot.innerHTML = '';
+        slot.classList.add('hidden');
+      }
+    };
+
+    // 카테고리별 태그 필터 바 렌더링
     function renderFilterBars() {
       const categories = [
-        { key: 'songTitle', elId: 'filterTagsSongTitle' },
-        { key: 'artist', elId: 'filterTagsArtist' },
-        { key: 'cover', elId: 'filterTagsCover' },
-        { key: 'genre', elId: 'filterTagsGenre' }
+        { key: 'songTitle', containerId: 'filterTagsSongTitle' },
+        { key: 'artist', containerId: 'filterTagsArtist' },
+        { key: 'cover', containerId: 'filterTagsCover' },
+        { key: 'genre', containerId: 'filterTagsGenre' }
       ];
 
-      categories.forEach(({ key, elId }) => {
-        const container = document.getElementById(elId);
-        if (!container) return;
-        const catTags = state.tags
-          .filter(t => t.category === key)
-          .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-
+      for (const cat of categories) {
+        const container = document.getElementById(cat.containerId);
+        if (!container) continue;
+        const catTags = state.tags.filter(t => t.category === cat.key);
         if (catTags.length === 0) {
-          container.innerHTML = `<span class="text-xs text-[#8C7362] italic py-0.5">등록된 태그 없음</span>`;
-          return;
+          container.innerHTML = `<span class="text-xs text-[#9E8777] dark:text-[#6E5B4D] italic">등록된 태그 없음</span>`;
+          continue;
         }
 
         container.innerHTML = catTags.map(tag => {
           const active = state.selectedFilterTagIds.has(tag.id);
-          const baseClass = 'px-2.5 py-1 rounded-full text-xs font-medium transition cursor-pointer border';
           const activeClass = active
-            ? 'bg-mahogany-700 text-parchment-50 border-mahogany-700 dark:bg-brass-500 dark:text-espresso-950 dark:border-brass-500 shadow-xs'
-            : 'bg-white/80 dark:bg-espresso-850 text-[#4A372B] dark:text-[#D6C7B8] border-parchment-300 dark:border-espresso-700 hover:border-brass-500';
-          return `<button type="button" onclick="toggleFilterTag('${escapeHtml(tag.id)}')" class="${baseClass} ${activeClass}">#${escapeHtml(tag.name)}</button>`;
+            ? 'bg-mahogany-700 text-parchment-50 border-mahogany-700 dark:bg-brass-500 dark:text-espresso-950 dark:border-brass-500 font-semibold shadow-xs'
+            : 'bg-white/80 dark:bg-espresso-850 text-[#5C4537] dark:text-[#C8B6A6] border-parchment-300 dark:border-espresso-700 hover:border-brass-500';
+          return `
+            <button type="button" onclick="toggleFilterTag('${escapeHtml(tag.id)}')"
+              class="px-2.5 py-1 rounded-full text-xs border transition ${activeClass}">
+              #${escapeHtml(tag.name)}
+            </button>
+          `;
         }).join('');
-      });
-
-      const resetBtn = document.getElementById('resetFilterBtn');
-      const query = (document.getElementById('searchInput')?.value || '').trim();
-      if (state.selectedFilterTagIds.size > 0 || query.length > 0) {
-        resetBtn.classList.remove('hidden');
-      } else {
-        resetBtn.classList.add('hidden');
       }
     }
 
@@ -1551,17 +1617,40 @@
       renderLibrary();
     };
 
-    function renderLibrary() {
+    window.clearSearchInput = function() {
+      const searchEl = document.getElementById('searchInput');
+      if (searchEl) {
+        searchEl.value = '';
+        searchEl.focus();
+      }
+      renderLibrary();
+    };
+
+    window.renderLibrary = function() {
       const grid = document.getElementById('allSongsGrid');
       const countBadge = document.getElementById('resultCountBadge');
-      const query = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+      const clearSearchBtn = document.getElementById('clearSearchBtn');
+      const rawQuery = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+
+      if (clearSearchBtn) {
+        if (rawQuery.length > 0) clearSearchBtn.classList.remove('hidden');
+        else clearSearchBtn.classList.add('hidden');
+      }
 
       const resetBtn = document.getElementById('resetFilterBtn');
-      if (state.selectedFilterTagIds.size > 0 || query.length > 0) {
-        resetBtn.classList.remove('hidden');
-      } else {
-        resetBtn.classList.add('hidden');
+      if (resetBtn) {
+        if (state.selectedFilterTagIds.size > 0 || rawQuery.length > 0) {
+          resetBtn.classList.remove('hidden');
+        } else {
+          resetBtn.classList.add('hidden');
+        }
       }
+
+      // 공백으로 구분된 다중 키워드 및 '#' 접두사 제거 검색 지원
+      const tokens = rawQuery
+        .split(/\s+/)
+        .map(tok => tok.replace(/^#+/, ''))
+        .filter(Boolean);
 
       const filtered = state.songs.filter(song => {
         const songAllTagIds = new Set(song.tagIds || []);
@@ -1572,22 +1661,25 @@
           if (!songAllTagIds.has(reqTagId)) return false;
         }
 
-        // 텍스트 검색어 필터
-        if (query) {
-          const titleMatch = (song.title || '').toLowerCase().includes(query);
-          const memoMatch = (song.memo || '').toLowerCase().includes(query);
-          const tagNames = Array.from(songAllTagIds)
-            .map(tid => state.tags.find(t => t.id === tid)?.name || '')
-            .join(' ')
-            .toLowerCase();
-          if (!titleMatch && !memoMatch && !tagNames.includes(query)) return false;
+        // 텍스트 검색어 필터 (곡 제목, 메모, 연결된 모든 태그 이름 포함)
+        if (tokens.length > 0) {
+          const titleText = (song.title || '').toLowerCase();
+          const memoText = (song.memo || '').toLowerCase();
+          const tagNamesList = Array.from(songAllTagIds)
+            .map(tid => (state.tags.find(t => t.id === tid)?.name || '').toLowerCase())
+            .filter(Boolean);
+          const combinedSearchable = `${titleText} ${memoText} ${tagNamesList.join(' ')}`;
+
+          const allTokensMatched = tokens.every(tok => combinedSearchable.includes(tok));
+          if (!allTokensMatched) return false;
         }
         return true;
       });
 
       filtered.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      countBadge.textContent = `총 ${filtered.length}곡`;
+      if (countBadge) countBadge.textContent = `총 ${filtered.length}곡`;
 
+      if (!grid) return;
       if (filtered.length === 0) {
         grid.innerHTML = `
           <div class="col-span-full py-16 text-center rounded-2xl border border-dashed border-parchment-300 dark:border-espresso-700 space-y-2">
@@ -1599,136 +1691,45 @@
       }
 
       grid.innerHTML = filtered.map(song => buildSongCardHtml(song, { isCarousel: false })).join('');
-    }
-
-    function buildSongCardHtml(song, { isCarousel = false, personalCount = null } = {}) {
-      const me = getCurrentUser();
-      const myCount = personalCount !== null ? personalCount : getUserSongCount(me?.id, song.id);
-      const titleTag = song.songTitleTagId ? state.tags.find(t => t.id === song.songTitleTagId) : null;
-      const otherTags = (song.tagIds || [])
-        .map(tid => state.tags.find(t => t.id === tid))
-        .filter(Boolean);
-
-      const widthClass = isCarousel
-        ? 'snap-start shrink-0 w-[85%] sm:w-[calc(50%-0.625rem)] lg:w-[calc(33.333%-0.85rem)]'
-        : 'w-full';
-
-      const thumbUrl = `https://i.ytimg.com/vi/${escapeHtml(song.videoId)}/hqdefault.jpg`;
-
-      return `
-        <article
-          onclick="openSongDetail('${escapeHtml(song.id)}')"
-          onmouseenter="startCardPreview(this, '${escapeHtml(song.videoId)}')"
-          onmouseleave="stopCardPreview(this)"
-          class="antique-card group cursor-pointer ${widthClass} rounded-2xl overflow-hidden border border-parchment-300/90 dark:border-espresso-700 bg-white/90 dark:bg-espresso-900 shadow-sm hover:shadow-xl hover:border-brass-500 flex flex-col justify-between">
-          <div>
-            <!-- 썸네일 & 호버 유튜브 미리보기 컨테이너 -->
-            <div class="relative aspect-video w-full bg-espresso-950 overflow-hidden">
-              <img src="${thumbUrl}" alt="${escapeHtml(song.title)}" loading="lazy"
-                onerror="this.src='https://placehold.co/640x360/2B1E17/D4AF37?text=Antique+Record'"
-                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              <div class="preview-slot absolute inset-0 pointer-events-none"></div>
-
-              <!-- 상단 좌측 원곡/곡그룹 배지 -->
-              <div class="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10 pointer-events-none">
-                ${song.isOriginal ? `<span class="px-2 py-0.5 rounded-md bg-mahogany-700/95 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-[10px] font-bold tracking-wider shadow">ORIGINAL</span>` : ''}
-                ${titleTag ? `<span class="px-2 py-0.5 rounded-md bg-black/75 text-brass-300 text-[10px] font-semibold backdrop-blur-xs border border-brass-500/30"><i class="fa-solid fa-music mr-1"></i>${escapeHtml(titleTag.name)}</span>` : ''}
-              </div>
-
-              <!-- 상단 우측 청취 횟수 배지 -->
-              <div class="absolute top-2.5 right-2.5 z-10 pointer-events-none">
-                <span class="px-2 py-0.5 rounded-md bg-black/70 text-parchment-100 text-[11px] font-medium backdrop-blur-xs">
-                  <i class="fa-solid fa-headphones text-brass-400 mr-1"></i>${myCount}회
-                </span>
-              </div>
-
-              <!-- 하단 호버 안내 힌트 -->
-              <div class="absolute bottom-2 right-2 z-10 opacity-85 group-hover:opacity-0 transition-opacity pointer-events-none">
-                <span class="px-2 py-0.5 rounded bg-black/65 text-white text-[10px]">
-                  <i class="fa-solid fa-play mr-1 text-brass-400"></i>커서 올리면 미리보기
-                </span>
-              </div>
-            </div>
-
-            <!-- 카드 본문 -->
-            <div class="p-4 space-y-2.5">
-              <h3 class="font-serif font-bold text-base sm:text-lg text-mahogany-800 dark:text-[#F5E9DA] line-clamp-1 group-hover:text-mahogany-600 dark:group-hover:text-brass-400 transition-colors">
-                ${escapeHtml(song.title)}
-              </h3>
-
-              ${song.memo ? `<p class="text-xs text-[#6D5444] dark:text-[#B8A392] line-clamp-1"><i class="fa-regular fa-note-sticky mr-1 opacity-75"></i>${escapeHtml(song.memo)}</p>` : ''}
-
-              <!-- 태그 목록 -->
-              <div class="flex flex-wrap gap-1 pt-0.5">
-                ${otherTags.map(tag => {
-                  let pillStyle = 'bg-parchment-100 dark:bg-espresso-800 text-[#5C4537] dark:text-[#C8B6A6]';
-                  if (tag.category === 'artist') pillStyle = 'bg-mahogany-700/10 dark:bg-brass-500/15 text-mahogany-800 dark:text-brass-300';
-                  else if (tag.category === 'cover') pillStyle = 'bg-amber-800/10 dark:bg-amber-500/15 text-amber-900 dark:text-amber-300';
-                  return `<span class="px-2 py-0.5 rounded-md text-[11px] font-medium ${pillStyle}">#${escapeHtml(tag.name)}</span>`;
-                }).join('')}
-              </div>
-            </div>
-          </div>
-        </article>
-      `;
-    }
-
-    // =========================================================================
-    // 6. 마우스 호버 유튜브 미리보기 (On-Demand Iframe — 메모리 누수/렉 제로)
-    // =========================================================================
-    window.startCardPreview = function(cardEl, videoId) {
-      stopCardPreview(cardEl);
-      cardEl._previewTimer = setTimeout(() => {
-        const slot = cardEl.querySelector('.preview-slot');
-        if (!slot) return;
-        slot.innerHTML = `
-          <iframe
-            src="https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&playsinline=1"
-            class="w-full h-full border-0"
-            allow="autoplay; encrypted-media"
-            loading="eager">
-          </iframe>
-        `;
-      }, 240);
     };
-
-    window.stopCardPreview = function(cardEl) {
-      if (cardEl._previewTimer) {
-        clearTimeout(cardEl._previewTimer);
-        cardEl._previewTimer = null;
-      }
-      const slot = cardEl.querySelector('.preview-slot');
-      if (slot && slot.innerHTML !== '') {
-        slot.innerHTML = '';
-      }
-    };
+    const renderLibrary = window.renderLibrary;
 
     // =========================================================================
-    // 7. 노래 추가 / 수정 모달 & 노래 제목 태그 자동완성 + 직접 입력
+    // 6. 노래 추가 / 수정 모달 & 노래 제목 태그 자동완성 / 직접 등록
     // =========================================================================
     window.openSongFormModal = function(songId = null) {
-      const form = document.getElementById('songForm');
-      form.reset();
-      document.getElementById('editSongId').value = songId || '';
-      state.formSelectedTagIds.clear();
-      state.formSelectedSongTitleTagId = null;
+      const formTitle = document.getElementById('songFormTitle');
+      const editIdInput = document.getElementById('editSongId');
+      const titleInput = document.getElementById('songTitleInput');
+      const urlInput = document.getElementById('songUrlInput');
+      const memoInput = document.getElementById('songMemoInput');
+      const originalCb = document.getElementById('isOriginalCheckbox');
+      const searchInput = document.getElementById('songTitleTagSearchInput');
+
       closeNewTitleTagBox();
-      hideTitleTagDropdown();
+      if (searchInput) searchInput.value = '';
+      document.getElementById('titleTagAutocompleteList')?.classList.add('hidden');
 
       if (songId) {
         const song = state.songs.find(s => s.id === songId);
-        if (song) {
-          document.getElementById('songFormTitle').textContent = '노래 정보 수정';
-          document.getElementById('songTitleInput').value = song.title || '';
-          document.getElementById('songUrlInput').value = `https://www.youtube.com/watch?v=${song.videoId}`;
-          document.getElementById('songMemoInput').value = song.memo || '';
-          document.getElementById('isOriginalCheckbox').checked = Boolean(song.isOriginal);
-          state.formSelectedSongTitleTagId = song.songTitleTagId || null;
-          (song.tagIds || []).forEach(tid => state.formSelectedTagIds.add(tid));
-        }
+        if (!song) return;
+        formTitle.textContent = '노래 정보 수정';
+        editIdInput.value = song.id;
+        titleInput.value = song.title || '';
+        urlInput.value = `https://www.youtube.com/watch?v=${song.videoId}`;
+        memoInput.value = song.memo || '';
+        originalCb.checked = Boolean(song.isOriginal);
+        state.formSelectedSongTitleTagId = song.songTitleTagId || null;
+        state.formSelectedTagIds = new Set(song.tagIds || []);
       } else {
-        document.getElementById('songFormTitle').textContent = '새 노래 아카이브에 추가';
-        document.getElementById('isOriginalCheckbox').checked = false;
+        formTitle.textContent = '새 노래 아카이브에 추가';
+        editIdInput.value = '';
+        titleInput.value = '';
+        urlInput.value = '';
+        memoInput.value = '';
+        originalCb.checked = false;
+        state.formSelectedSongTitleTagId = null;
+        state.formSelectedTagIds = new Set();
       }
 
       renderSelectedTitleTagDisplay();
@@ -1739,19 +1740,20 @@
     function renderSelectedTitleTagDisplay() {
       const box = document.getElementById('selectedTitleTagDisplay');
       if (!box) return;
-      const tag = state.formSelectedSongTitleTagId
-        ? state.tags.find(t => t.id === state.formSelectedSongTitleTagId)
-        : null;
-
-      if (!tag) {
+      if (!state.formSelectedSongTitleTagId) {
         box.innerHTML = `<span class="text-[11px] text-[#8C7362] italic">연결된 노래 제목 태그가 없습니다. 아래에서 검색해 선택하거나 새로 추가하세요.</span>`;
         return;
       }
-
+      const tag = state.tags.find(t => t.id === state.formSelectedSongTitleTagId);
+      if (!tag) {
+        state.formSelectedSongTitleTagId = null;
+        box.innerHTML = `<span class="text-[11px] text-[#8C7362] italic">연결된 노래 제목 태그가 없습니다.</span>`;
+        return;
+      }
       box.innerHTML = `
-        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-mahogany-700 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-xs font-semibold shadow-xs">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-mahogany-700 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-xs font-semibold shadow-xs">
           <i class="fa-solid fa-music text-[10px]"></i>
-          <span>${escapeHtml(tag.name)}</span>
+          <span>#${escapeHtml(tag.name)}</span>
           <button type="button" onclick="clearSelectedSongTitleTag()" class="ml-1 hover:opacity-75" title="연결 해제">
             <i class="fa-solid fa-xmark"></i>
           </button>
@@ -1764,74 +1766,54 @@
       renderSelectedTitleTagDisplay();
     };
 
-    window.selectSongTitleTag = function(tagId) {
-      state.formSelectedSongTitleTagId = tagId;
-      const input = document.getElementById('songTitleTagSearchInput');
-      if (input) input.value = '';
-      hideTitleTagDropdown();
-      renderSelectedTitleTagDisplay();
-    };
-
     window.openTitleTagDropdown = function() {
       renderTitleTagDropdown();
-      const listEl = document.getElementById('titleTagAutocompleteList');
-      if (listEl) listEl.classList.remove('hidden');
+      document.getElementById('titleTagAutocompleteList')?.classList.remove('hidden');
     };
-
-    function hideTitleTagDropdown() {
-      const listEl = document.getElementById('titleTagAutocompleteList');
-      if (listEl) listEl.classList.add('hidden');
-    }
 
     window.renderTitleTagDropdown = function() {
       const listEl = document.getElementById('titleTagAutocompleteList');
-      const inputEl = document.getElementById('songTitleTagSearchInput');
-      if (!listEl || !inputEl) return;
+      const query = (document.getElementById('songTitleTagSearchInput')?.value || '').trim().toLowerCase();
+      if (!listEl) return;
 
-      const keyword = inputEl.value.trim().toLowerCase();
-      const titleTags = state.tags
-        .filter(t => t.category === 'songTitle')
-        .filter(t => !keyword || t.name.toLowerCase().includes(keyword))
-        .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+      const titleTags = state.tags.filter(t => t.category === 'songTitle');
+      const matched = titleTags.filter(t => (t.name || '').toLowerCase().includes(query));
 
-      if (titleTags.length === 0) {
+      if (matched.length === 0) {
         listEl.innerHTML = `
-          <div class="px-3 py-2.5 text-xs text-[#8C7362]">
-            일치하는 노래 제목 태그가 없습니다. 우측 <strong>[+ 새 제목 태그 추가]</strong> 버튼으로 직접 등록하세요.
+          <div class="px-3 py-2 text-xs text-[#8C7362]">
+            일치하는 노래 제목 태그가 없습니다. 우측 <strong>[+ 새 제목 태그 추가]</strong> 버튼으로 새로 만들어 보세요.
           </div>
         `;
       } else {
-        listEl.innerHTML = titleTags.map(tag => {
-          const isSelected = state.formSelectedSongTitleTagId === tag.id;
-          return `
-            <button type="button" onclick="selectSongTitleTag('${escapeHtml(tag.id)}')"
-              class="w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-parchment-100 dark:hover:bg-espresso-800 transition ${isSelected ? 'bg-brass-500/15 font-bold text-mahogany-800 dark:text-brass-300' : 'text-[#4A372B] dark:text-[#D6C7B8]'}">
-              <span><i class="fa-solid fa-music mr-1.5 text-brass-500"></i>${escapeHtml(tag.name)}</span>
-              ${isSelected ? '<i class="fa-solid fa-check text-brass-500"></i>' : ''}
-            </button>
-          `;
-        }).join('');
+        listEl.innerHTML = matched.map(t => `
+          <button type="button" onclick="selectSongTitleTag('${escapeHtml(t.id)}')"
+            class="w-full text-left px-3 py-2 text-xs hover:bg-parchment-100 dark:hover:bg-espresso-800 flex items-center justify-between transition">
+            <span class="font-medium text-mahogany-800 dark:text-[#F5E9DA]">
+              <i class="fa-solid fa-music mr-1.5 text-brass-500"></i>#${escapeHtml(t.name)}
+            </span>
+            ${state.formSelectedSongTitleTagId === t.id ? '<span class="text-[10px] text-brass-500 font-bold">선택됨</span>' : ''}
+          </button>
+        `).join('');
       }
       listEl.classList.remove('hidden');
     };
 
-    // 외부 클릭 시 자동완성 드롭다운 닫기
-    document.addEventListener('click', (e) => {
+    window.selectSongTitleTag = function(tagId) {
+      state.formSelectedSongTitleTagId = tagId;
       const searchInput = document.getElementById('songTitleTagSearchInput');
-      const dropdown = document.getElementById('titleTagAutocompleteList');
-      if (searchInput && dropdown && !searchInput.contains(e.target) && !dropdown.contains(e.target)) {
-        hideTitleTagDropdown();
-      }
-    });
+      if (searchInput) searchInput.value = '';
+      document.getElementById('titleTagAutocompleteList')?.classList.add('hidden');
+      renderSelectedTitleTagDisplay();
+    };
 
-    // 새 노래 제목 태그 직접 입력 박스 열기/닫기/등록
     window.openNewTitleTagBox = function() {
-      hideTitleTagDropdown();
       const box = document.getElementById('newTitleTagInlineBox');
       const input = document.getElementById('newSongTitleTagNameInput');
-      if (box && input) {
-        box.classList.remove('hidden');
-        input.value = document.getElementById('songTitleTagSearchInput')?.value.trim() || '';
+      const searchVal = (document.getElementById('songTitleTagSearchInput')?.value || '').trim();
+      if (box) box.classList.remove('hidden');
+      if (input) {
+        input.value = searchVal;
         input.focus();
       }
     };
@@ -1847,18 +1829,19 @@
       const input = document.getElementById('newSongTitleTagNameInput');
       const name = (input?.value || '').trim();
       if (!name) {
-        showToast('새 노래 제목 태그 이름을 입력해 주세요.', true);
+        showToast('추가할 노래 제목 태그 이름을 입력해 주세요.', true);
         return;
       }
 
-      // 동일 이름의 노래 제목 태그가 이미 존재하면 재사용
+      // 이미 같은 이름의 노래 제목 태그가 있으면 바로 선택
       const existing = state.tags.find(
         t => t.category === 'songTitle' && t.name.toLowerCase() === name.toLowerCase()
       );
       if (existing) {
-        selectSongTitleTag(existing.id);
+        state.formSelectedSongTitleTagId = existing.id;
         closeNewTitleTagBox();
-        showToast(`기존 '${existing.name}' 태그를 연결했습니다.`);
+        renderSelectedTitleTagDisplay();
+        showToast(`기존 '#${existing.name}' 태그를 연결했습니다.`);
         return;
       }
 
@@ -1866,46 +1849,47 @@
       const newTag = { id: newTagId, name, category: 'songTitle' };
       try {
         await setDoc(publicDoc('tags', newTagId), newTag);
-        state.tags.push(newTag);
-        selectSongTitleTag(newTagId);
+        state.formSelectedSongTitleTagId = newTagId;
         closeNewTitleTagBox();
-        showToast(`새 노래 제목 태그 '${name}' 등록 완료!`);
+        renderSelectedTitleTagDisplay();
+        showToast(`새 노래 제목 태그 '#${name}'가 등록 및 연결되었습니다.`);
       } catch (err) {
-        console.error('Create title tag error:', err);
-        showToast('노래 제목 태그 저장 중 오류가 발생했습니다.', true);
+        console.error('Create songTitle tag error:', err);
+        showToast('태그 저장 중 오류가 발생했습니다.', true);
       }
     };
 
     function renderSongFormTagSelectors() {
-      const map = [
-        { key: 'artist', elId: 'formTagsArtist' },
-        { key: 'cover', elId: 'formTagsCover' },
-        { key: 'genre', elId: 'formTagsGenre' }
+      const groups = [
+        { key: 'artist', containerId: 'formTagsArtist' },
+        { key: 'cover', containerId: 'formTagsCover' },
+        { key: 'genre', containerId: 'formTagsGenre' }
       ];
 
-      map.forEach(({ key, elId }) => {
-        const container = document.getElementById(elId);
-        if (!container) return;
-        const catTags = state.tags
-          .filter(t => t.category === key)
-          .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-
+      for (const grp of groups) {
+        const container = document.getElementById(grp.containerId);
+        if (!container) continue;
+        const catTags = state.tags.filter(t => t.category === grp.key);
         if (catTags.length === 0) {
-          container.innerHTML = `<span class="text-[11px] text-[#8C7362] italic">태그 없음</span>`;
-          return;
+          container.innerHTML = `<span class="text-[11px] text-[#9E8777] italic">없음</span>`;
+          continue;
         }
-
         container.innerHTML = catTags.map(tag => {
           const selected = state.formSelectedTagIds.has(tag.id);
           const cls = selected
-            ? 'bg-mahogany-700 text-parchment-50 border-mahogany-700 dark:bg-brass-500 dark:text-espresso-950 dark:border-brass-500 font-semibold'
-            : 'bg-white dark:bg-espresso-900 text-[#4A372B] dark:text-[#D6C7B8] border-parchment-300 dark:border-espresso-700 hover:border-brass-500';
-          return `<button type="button" onclick="toggleFormTag('${escapeHtml(tag.id)}')" class="px-2.5 py-1 rounded-full border transition ${cls}">#${escapeHtml(tag.name)}</button>`;
+            ? 'bg-mahogany-700 text-white border-mahogany-700 dark:bg-brass-500 dark:text-espresso-950 dark:border-brass-500 font-semibold'
+            : 'bg-white dark:bg-espresso-900 text-[#5C4537] dark:text-[#C8B6A6] border-parchment-300 dark:border-espresso-700 hover:border-brass-500';
+          return `
+            <button type="button" onclick="toggleFormTagSelection('${escapeHtml(tag.id)}')"
+              class="px-2.5 py-1 rounded-full border text-xs transition ${cls}">
+              #${escapeHtml(tag.name)}
+            </button>
+          `;
         }).join('');
-      });
+      }
     }
 
-    window.toggleFormTag = function(tagId) {
+    window.toggleFormTagSelection = function(tagId) {
       if (state.formSelectedTagIds.has(tagId)) {
         state.formSelectedTagIds.delete(tagId);
       } else {
@@ -1915,50 +1899,45 @@
     };
 
     window.addQuickTag = async function() {
-      const category = document.getElementById('quickTagCategory').value;
-      const nameInput = document.getElementById('quickTagName');
-      const name = (nameInput.value || '').trim();
+      const cat = document.getElementById('quickTagCategory').value;
+      const inputEl = document.getElementById('quickTagName');
+      const name = (inputEl.value || '').trim();
       if (!name) return;
 
       const existing = state.tags.find(
-        t => t.category === category && t.name.toLowerCase() === name.toLowerCase()
+        t => t.category === cat && t.name.toLowerCase() === name.toLowerCase()
       );
       if (existing) {
         state.formSelectedTagIds.add(existing.id);
-        nameInput.value = '';
+        inputEl.value = '';
         renderSongFormTagSelectors();
         showToast(`기존 '#${existing.name}' 태그를 선택했습니다.`);
         return;
       }
 
       const newId = generateId('tag');
-      const newTag = { id: newId, name, category };
+      const newTag = { id: newId, name, category: cat };
       try {
         await setDoc(publicDoc('tags', newId), newTag);
         state.formSelectedTagIds.add(newId);
-        nameInput.value = '';
+        inputEl.value = '';
         renderSongFormTagSelectors();
         showToast(`'#${name}' 태그가 추가되었습니다.`);
       } catch (err) {
-        console.error('Quick tag error:', err);
+        console.error('Quick tag add error:', err);
         showToast('태그 추가 중 오류가 발생했습니다.', true);
       }
     };
 
     window.handleSaveSong = async function(e) {
       e.preventDefault();
-      if (!state.fbUser) {
-        showToast('DB 연결을 확인해 주세요.', true);
-        return;
-      }
-
       const editId = document.getElementById('editSongId').value;
       const title = document.getElementById('songTitleInput').value.trim();
-      const urlRaw = document.getElementById('songUrlInput').value.trim();
+      const rawUrl = document.getElementById('songUrlInput').value.trim();
       const memo = document.getElementById('songMemoInput').value.trim();
       const isOriginal = document.getElementById('isOriginalCheckbox').checked;
 
-      const videoId = extractYoutubeId(urlRaw);
+      const videoId = extractYoutubeId(rawUrl);
       if (!videoId) {
         showToast('올바른 유튜브 링크 또는 11자리 영상 ID를 입력해 주세요.', true);
         return;
@@ -1974,13 +1953,13 @@
         tagIds: Array.from(state.formSelectedTagIds),
         songTitleTagId: state.formSelectedSongTitleTagId || null,
         isOriginal,
-        createdAt: existingSong ? (existingSong.createdAt || Date.now()) : Date.now()
+        createdAt: existingSong ? existingSong.createdAt : Date.now()
       };
 
       try {
         await setDoc(publicDoc('songs', songId), payload);
         closeModal('songFormModal');
-        showToast(editId ? '노래 정보가 수정되었습니다.' : '새 노래가 보관함에 추가되었습니다!');
+        showToast(editId ? '노래 정보가 수정되었습니다.' : '새 노래가 아카이브에 저장되었습니다.');
       } catch (err) {
         console.error('Save song error:', err);
         showToast('노래 저장 중 오류가 발생했습니다.', true);
@@ -1988,129 +1967,12 @@
     };
 
     // =========================================================================
-    // 8. 태그 전용 관리 모달 (추가 · 이름 일괄 수정 · 삭제)
+    // 7. 태그 전용 관리 모달 (추가 / 인라인 이름 수정 및 일괄 반영 / 삭제)
     // =========================================================================
     window.openTagManagerModal = function() {
       state.editingTagId = null;
       renderTagManagerLists();
       openModal('tagManagerModal');
-    };
-
-    function renderTagManagerLists() {
-      const groups = [
-        { key: 'songTitle', elId: 'managerListSongTitle' },
-        { key: 'artist', elId: 'managerListArtist' },
-        { key: 'cover', elId: 'managerListCover' },
-        { key: 'genre', elId: 'managerListGenre' }
-      ];
-
-      groups.forEach(({ key, elId }) => {
-        const container = document.getElementById(elId);
-        if (!container) return;
-        const items = state.tags
-          .filter(t => t.category === key)
-          .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
-
-        if (items.length === 0) {
-          container.innerHTML = `<span class="text-xs text-[#8C7362] italic">등록된 태그가 없습니다.</span>`;
-          return;
-        }
-
-        container.innerHTML = items.map(tag => {
-          if (state.editingTagId === tag.id) {
-            return `
-              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl border border-brass-500 bg-white dark:bg-espresso-800 text-xs shadow-xs">
-                <input type="text" id="editTagInput-${escapeHtml(tag.id)}" value="${escapeHtml(tag.name)}"
-                  onkeydown="if(event.key==='Enter'){event.preventDefault(); saveEditedTag('${escapeHtml(tag.id)}');} else if(event.key==='Escape'){event.preventDefault(); cancelEditTag();}"
-                  class="w-28 sm:w-36 px-1.5 py-0.5 rounded bg-parchment-50 dark:bg-espresso-900 border border-parchment-300 dark:border-espresso-700 text-mahogany-800 dark:text-[#F5E9DA] focus:outline-none focus:border-brass-500" />
-                <button type="button" onclick="saveEditedTag('${escapeHtml(tag.id)}')" title="수정 저장"
-                  class="px-2 py-0.5 rounded bg-mahogany-700 dark:bg-brass-600 text-white font-semibold hover:opacity-90">
-                  저장
-                </button>
-                <button type="button" onclick="cancelEditTag()" title="취소"
-                  class="px-1.5 py-0.5 rounded border border-parchment-300 dark:border-espresso-700 text-[#7A6252] dark:text-[#A38E7D] hover:bg-parchment-100 dark:hover:bg-espresso-700">
-                  취소
-                </button>
-              </span>
-            `;
-          }
-
-          const linkedCount = state.songs.filter(
-            s => s.songTitleTagId === tag.id || (s.tagIds || []).includes(tag.id)
-          ).length;
-
-          return `
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-850 text-xs font-medium shadow-2xs">
-              <button type="button" onclick="startEditTag('${escapeHtml(tag.id)}')" title="클릭하여 태그 이름 수정"
-                class="hover:text-mahogany-600 dark:hover:text-brass-400 transition text-left">
-                #${escapeHtml(tag.name)}
-              </button>
-              <span class="text-[10px] text-[#8C7362]">(${linkedCount})</span>
-              <button type="button" onclick="startEditTag('${escapeHtml(tag.id)}')" title="태그 이름 수정 (적용된 노래에 일괄 반영)"
-                class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-parchment-100 dark:bg-espresso-800 text-mahogany-700 dark:text-brass-400 hover:bg-brass-500/20 text-[10px] font-semibold transition ml-0.5">
-                <i class="fa-solid fa-pen text-[9px]"></i> 수정
-              </button>
-              <button type="button" onclick="deleteTag('${escapeHtml(tag.id)}')" title="태그 삭제"
-                class="text-red-500 hover:text-red-700 ml-0.5 px-1">
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </span>
-          `;
-        }).join('');
-      });
-    }
-
-    window.startEditTag = function(tagId) {
-      state.editingTagId = tagId;
-      renderTagManagerLists();
-      const inputEl = document.getElementById(`editTagInput-${tagId}`);
-      if (inputEl) {
-        inputEl.focus();
-        inputEl.select();
-      }
-    };
-
-    window.cancelEditTag = function() {
-      state.editingTagId = null;
-      renderTagManagerLists();
-    };
-
-    window.saveEditedTag = async function(tagId) {
-      const tag = state.tags.find(t => t.id === tagId);
-      const inputEl = document.getElementById(`editTagInput-${tagId}`);
-      if (!tag || !inputEl) return;
-
-      const newName = inputEl.value.trim();
-      if (!newName) {
-        showToast('변경할 태그 이름을 입력해 주세요.', true);
-        return;
-      }
-
-      if (newName === tag.name) {
-        state.editingTagId = null;
-        renderTagManagerLists();
-        return;
-      }
-
-      const duplicate = state.tags.find(
-        t => t.id !== tagId && t.category === tag.category && t.name.toLowerCase() === newName.toLowerCase()
-      );
-      if (duplicate) {
-        showToast('같은 분류에 이미 동일한 이름의 태그가 있습니다.', true);
-        return;
-      }
-
-      try {
-        await setDoc(publicDoc('tags', tagId), { name: newName }, { merge: true });
-        tag.name = newName;
-        state.editingTagId = null;
-        renderTagManagerLists();
-        renderAll();
-        showToast(`'#${newName}'(으)로 수정되어 적용된 모든 노래에 일괄 반영되었습니다.`);
-      } catch (err) {
-        console.error('Edit tag error:', err);
-        showToast('태그 수정 중 오류가 발생했습니다.', true);
-      }
     };
 
     window.handleAddTagFromManager = async function(e) {
@@ -2120,11 +1982,11 @@
       const name = (nameInput.value || '').trim();
       if (!name) return;
 
-      const exists = state.tags.some(
+      const dup = state.tags.find(
         t => t.category === category && t.name.toLowerCase() === name.toLowerCase()
       );
-      if (exists) {
-        showToast('이미 동일한 이름의 태그가 존재합니다.', true);
+      if (dup) {
+        showToast('같은 카테고리에 이미 동일한 이름의 태그가 있습니다.', true);
         return;
       }
 
@@ -2132,16 +1994,81 @@
       try {
         await setDoc(publicDoc('tags', newId), { id: newId, name, category });
         nameInput.value = '';
-        showToast(`'#${name}' 태그가 등록되었습니다.`);
+        showToast(`'#${name}' 태그가 추가되었습니다.`);
       } catch (err) {
-        console.error('Add tag error:', err);
-        showToast('태그 등록 중 오류가 발생했습니다.', true);
+        console.error('Manager add tag error:', err);
+        showToast('태그 추가에 실패했습니다.', true);
       }
     };
 
-    window.deleteTag = async function(tagId) {
+    window.startEditTag = function(tagId) {
+      state.editingTagId = tagId;
+      renderTagManagerLists();
+      setTimeout(() => {
+        const inp = document.getElementById(`editTagInput-${tagId}`);
+        if (inp) {
+          inp.focus();
+          inp.select();
+        }
+      }, 20);
+    };
+
+    window.cancelEditTag = function() {
+      state.editingTagId = null;
+      renderTagManagerLists();
+    };
+
+    window.saveEditedTag = async function(tagId) {
+      const inp = document.getElementById(`editTagInput-${tagId}`);
+      const newName = (inp?.value || '').trim();
+      const targetTag = state.tags.find(t => t.id === tagId);
+      if (!targetTag) return;
+
+      if (!newName) {
+        showToast('태그 이름을 비워둘 수 없습니다.', true);
+        return;
+      }
+      if (newName === targetTag.name) {
+        state.editingTagId = null;
+        renderTagManagerLists();
+        return;
+      }
+
+      const dup = state.tags.find(
+        t => t.id !== tagId && t.category === targetTag.category && t.name.toLowerCase() === newName.toLowerCase()
+      );
+      if (dup) {
+        showToast('같은 카테고리에 이미 동일한 태그 이름이 존재합니다.', true);
+        return;
+      }
+
+      try {
+        // 태그 문서의 name만 갱신하면 모든 노래는 tag.id로 참조하므로 전체 노래에 즉시 일괄 반영됨
+        await setDoc(publicDoc('tags', tagId), { ...targetTag, name: newName });
+        state.editingTagId = null;
+        showToast(`태그 이름이 '#${newName}'(으)로 일괄 변경되었습니다.`);
+      } catch (err) {
+        console.error('Save edited tag error:', err);
+        showToast('태그 이름 수정 중 오류가 발생했습니다.', true);
+      }
+    };
+
+    window.deleteTagFromManager = async function(tagId) {
       try {
         await deleteDoc(publicDoc('tags', tagId));
+        // 연결된 노래들의 tagIds 및 songTitleTagId에서도 정리
+        const affectedSongs = state.songs.filter(
+          s => (s.tagIds && s.tagIds.includes(tagId)) || s.songTitleTagId === tagId
+        );
+        for (const song of affectedSongs) {
+          const updatedTagIds = (song.tagIds || []).filter(id => id !== tagId);
+          const updatedTitleTagId = song.songTitleTagId === tagId ? null : (song.songTitleTagId || null);
+          await setDoc(publicDoc('songs', song.id), {
+            ...song,
+            tagIds: updatedTagIds,
+            songTitleTagId: updatedTitleTagId
+          });
+        }
         showToast('태그가 삭제되었습니다.');
       } catch (err) {
         console.error('Delete tag error:', err);
@@ -2149,23 +2076,79 @@
       }
     };
 
+    function renderTagManagerLists() {
+      const groups = [
+        { key: 'songTitle', containerId: 'managerListSongTitle' },
+        { key: 'artist', containerId: 'managerListArtist' },
+        { key: 'cover', containerId: 'managerListCover' },
+        { key: 'genre', containerId: 'managerListGenre' }
+      ];
+
+      for (const grp of groups) {
+        const container = document.getElementById(grp.containerId);
+        if (!container) continue;
+        const catTags = state.tags.filter(t => t.category === grp.key);
+        if (catTags.length === 0) {
+          container.innerHTML = `<span class="text-xs text-[#9E8777] italic">등록된 태그가 없습니다.</span>`;
+          continue;
+        }
+
+        container.innerHTML = catTags.map(tag => {
+          if (state.editingTagId === tag.id) {
+            return `
+              <div class="inline-flex items-center gap-1 px-2 py-1 rounded-xl border border-brass-500 bg-white dark:bg-espresso-850 shadow-xs">
+                <span class="text-xs text-brass-500 font-bold">#</span>
+                <input type="text" id="editTagInput-${escapeHtml(tag.id)}" value="${escapeHtml(tag.name)}"
+                  onkeydown="if(event.key==='Enter'){event.preventDefault(); saveEditedTag('${escapeHtml(tag.id)}');} else if(event.key==='Escape'){event.preventDefault(); cancelEditTag();}"
+                  class="w-28 px-1.5 py-0.5 text-xs bg-transparent text-mahogany-800 dark:text-[#F5E9DA] focus:outline-none" />
+                <button type="button" onclick="saveEditedTag('${escapeHtml(tag.id)}')" title="저장"
+                  class="px-2 py-0.5 rounded-md bg-mahogany-700 dark:bg-brass-600 text-white text-[11px] font-semibold">
+                  저장
+                </button>
+                <button type="button" onclick="cancelEditTag()" title="취소"
+                  class="px-1.5 py-0.5 rounded-md text-[#7A6252] hover:text-mahogany-800 dark:hover:text-white text-[11px]">
+                  취소
+                </button>
+              </div>
+            `;
+          }
+
+          return `
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-850 text-xs shadow-2xs">
+              <span class="font-medium text-mahogany-800 dark:text-[#F5E9DA]">#${escapeHtml(tag.name)}</span>
+              <button type="button" onclick="startEditTag('${escapeHtml(tag.id)}')" title="태그 이름 수정"
+                class="ml-1 text-[#8C7362] hover:text-brass-600 dark:hover:text-brass-400 transition p-0.5">
+                <i class="fa-solid fa-pen text-[10px]"></i>
+              </button>
+              <button type="button" onclick="deleteTagFromManager('${escapeHtml(tag.id)}')" title="태그 삭제"
+                class="text-[#8C7362] hover:text-red-600 dark:hover:text-red-400 transition p-0.5">
+                <i class="fa-solid fa-trash-can text-[10px]"></i>
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
     // =========================================================================
-    // 9. 노래 상세 감상 모달 & 원곡 최상단 연관 버전 미니 리스트
+    // 8. 노래 상세 감상 모달 (클릭 시 개인 청취 횟수 +1 & 원곡 우선 연관 버전 리스트)
     // =========================================================================
-    window.openSongDetail = async function(songId) {
+    window.openDetailModal = async function(songId) {
       const song = state.songs.find(s => s.id === songId);
       if (!song) return;
 
+      // 현재 이용자의 해당 곡 청취 횟수 +1 증가
       const me = getCurrentUser();
-      let updatedCount = getUserSongCount(me?.id, songId);
-
-      // 현재 이용자 청취 횟수 +1 증가 (Firestore 실시간 동기화)
-      if (me && state.fbUser) {
-        updatedCount += 1;
+      let updatedMyCount = getTotalSongCount(song.id);
+      if (me && state.dbReady) {
+        const currentMyStats = { ...(state.userStats[me.id] || {}) };
+        updatedMyCount = Number(currentMyStats[song.id] || 0) + 1;
+        currentMyStats[song.id] = updatedMyCount;
+        state.userStats[me.id] = currentMyStats;
         try {
-          await setDoc(publicDoc('userStats', me.id), { [songId]: updatedCount }, { merge: true });
+          await setDoc(publicDoc('userStats', me.id), currentMyStats);
         } catch (err) {
-          console.error('Increment listen count error:', err);
+          console.error('Increment play count error:', err);
         }
       }
 
@@ -2173,124 +2156,128 @@
       const playerBox = document.getElementById('detailPlayerContainer');
       playerBox.innerHTML = `
         <iframe
+          class="w-full h-full"
           src="https://www.youtube.com/embed/${encodeURIComponent(song.videoId)}?autoplay=1&rel=0"
-          class="w-full h-full border-0"
-          allow="autoplay; encrypted-media; fullscreen"
+          title="${escapeHtml(song.title)}"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowfullscreen>
         </iframe>
       `;
 
-      // 제목 & 원곡 배지
+      // 상단 메타 정보 채우기
       const origBadge = document.getElementById('detailOriginalBadge');
       if (song.isOriginal) origBadge.classList.remove('hidden');
       else origBadge.classList.add('hidden');
 
       document.getElementById('detailTitle').textContent = song.title;
       document.getElementById('detailVisitBadge').innerHTML =
-        `<i class="fa-solid fa-headphones mr-1"></i>${me ? escapeHtml(me.displayName) + '님 ' : ''}${updatedCount}회 청취 (전체 ${getTotalSongCount(songId)}회)`;
+        `<i class="fa-solid fa-headphones mr-1"></i>${me ? `${escapeHtml(me.displayName)}님 ` : ''}${updatedMyCount}회 청취`;
+      document.getElementById('detailDateBadge').textContent = song.createdAt
+        ? `추가일: ${new Date(song.createdAt).toLocaleDateString('ko-KR')}`
+        : '';
 
-      const dateStr = song.createdAt ? new Date(song.createdAt).toLocaleDateString('ko-KR') : '';
-      document.getElementById('detailDateBadge').textContent = dateStr ? `등록일: ${dateStr}` : '';
-
-      // 메모
       const memoBox = document.getElementById('detailMemoBox');
       if (song.memo) {
+        memoBox.textContent = song.memo;
         memoBox.classList.remove('hidden');
-        memoBox.innerHTML = `<i class="fa-regular fa-note-sticky mr-1.5 text-brass-500"></i>${escapeHtml(song.memo)}`;
       } else {
         memoBox.classList.add('hidden');
       }
 
-      // 부착된 태그
-      const tagsBox = document.getElementById('detailTagsContainer');
-      const titleTag = song.songTitleTagId ? state.tags.find(t => t.id === song.songTitleTagId) : null;
-      const otherTags = (song.tagIds || []).map(tid => state.tags.find(t => t.id === tid)).filter(Boolean);
-
-      let tagsHtml = '';
-      if (titleTag) {
-        tagsHtml += `<span class="px-2.5 py-1 rounded-full bg-mahogany-700 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-xs font-bold"><i class="fa-solid fa-music mr-1"></i>${escapeHtml(titleTag.name)}</span>`;
+      // 부착된 태그 표시
+      const tagsContainer = document.getElementById('detailTagsContainer');
+      const allTagObjs = [];
+      if (song.songTitleTagId) {
+        const tt = state.tags.find(t => t.id === song.songTitleTagId);
+        if (tt) allTagObjs.push(tt);
       }
-      tagsHtml += otherTags
-        .map(t => `<span class="px-2.5 py-1 rounded-full bg-parchment-200 dark:bg-espresso-800 text-[#4A372B] dark:text-[#D6C7B8] text-xs font-medium">#${escapeHtml(t.name)}</span>`)
-        .join('');
-      tagsBox.innerHTML = tagsHtml;
+      for (const tid of (song.tagIds || [])) {
+        const t = state.tags.find(item => item.id === tid);
+        if (t) allTagObjs.push(t);
+      }
+      tagsContainer.innerHTML = allTagObjs.map(tag => `
+        <span class="px-2.5 py-1 rounded-lg text-xs font-medium border ${getTagBadgeStyle(tag.category)}">
+          #${escapeHtml(tag.name)}
+        </span>
+      `).join('');
 
-      // 같은 노래 제목 태그를 공유하는 다른 버전 목록 (원곡이 무조건 맨 위!)
-      const relatedSection = document.getElementById('relatedVersionsSection');
+      // 같은 노래 제목 태그를 공유하는 연관 버전(원곡 최상단) 미니 리스트 렌더링
+      const relatedSec = document.getElementById('relatedVersionsSection');
       const relatedList = document.getElementById('relatedVersionsList');
       const relatedTitleEl = document.getElementById('relatedSectionTitle');
       const relatedCountEl = document.getElementById('relatedCountBadge');
 
       if (song.songTitleTagId) {
+        const titleTagObj = state.tags.find(t => t.id === song.songTitleTagId);
         const siblings = state.songs
-          .filter(s => s.songTitleTagId === song.songTitleTagId && s.id !== song.id)
+          .filter(s => s.songTitleTagId === song.songTitleTagId)
           .sort((a, b) => {
-            if (Boolean(a.isOriginal) !== Boolean(b.isOriginal)) {
-              return a.isOriginal ? -1 : 1; // 원곡(isOriginal: true) 최상단 고정
+            // 원곡(isOriginal === true)이 무조건 최상단
+            if (Boolean(b.isOriginal) !== Boolean(a.isOriginal)) {
+              return (b.isOriginal ? 1 : 0) - (a.isOriginal ? 1 : 0);
             }
             return (a.createdAt || 0) - (b.createdAt || 0);
           });
 
         if (siblings.length > 0) {
-          relatedSection.classList.remove('hidden');
-          relatedTitleEl.textContent = titleTag
-            ? `'${titleTag.name}' 연관 버전 (원곡 최상단)`
-            : '같은 노래 제목 태그의 다른 버전 (원곡 최상단)';
-          relatedCountEl.textContent = `다른 버전 ${siblings.length}곡`;
+          relatedSec.classList.remove('hidden');
+          relatedTitleEl.textContent = `'#${titleTagObj ? titleTagObj.name : '같은 곡'}' 연결 버전 목록 (원곡 최상단)`;
+          relatedCountEl.textContent = `총 ${siblings.length}개 버전`;
 
-          relatedList.innerHTML = siblings.map(rel => {
-            const coverTags = (rel.tagIds || [])
-              .map(tid => state.tags.find(t => t.id === tid))
-              .filter(t => t && (t.category === 'cover' || t.category === 'artist'))
-              .map(t => t.name)
-              .join(' · ');
-
+          relatedList.innerHTML = siblings.map(item => {
+            const isCurrent = item.id === song.id;
+            const rowCls = isCurrent
+              ? 'border-brass-500 bg-brass-500/15 dark:bg-brass-500/20'
+              : 'border-parchment-200 dark:border-espresso-700 bg-white/80 dark:bg-espresso-850 hover:border-brass-500/60';
             return `
-              <button type="button" onclick="openSongDetail('${escapeHtml(rel.id)}')"
-                class="w-full text-left px-3 py-2 rounded-xl border ${rel.isOriginal ? 'border-brass-500/60 bg-brass-500/10' : 'border-parchment-200 dark:border-espresso-800 bg-white/70 dark:bg-espresso-850'} hover:border-brass-500 transition flex items-center justify-between gap-2">
+              <button type="button" onclick="openDetailModal('${escapeHtml(item.id)}')"
+                class="w-full text-left px-3 py-2 rounded-xl border ${rowCls} flex items-center justify-between gap-2 transition">
                 <div class="flex items-center gap-2 min-w-0">
-                  ${rel.isOriginal
-                    ? '<span class="shrink-0 px-1.5 py-0.5 rounded bg-mahogany-700 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-[10px] font-bold">원곡</span>'
-                    : '<span class="shrink-0 px-1.5 py-0.5 rounded bg-parchment-200 dark:bg-espresso-700 text-[#6D5444] dark:text-[#C8B6A6] text-[10px] font-medium">버전</span>'}
-                  <span class="text-xs font-semibold text-mahogany-800 dark:text-[#F5E9DA] truncate">${escapeHtml(rel.title)}</span>
+                  ${item.isOriginal ? `
+                    <span class="shrink-0 px-1.5 py-0.5 rounded bg-mahogany-700 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-[10px] font-bold">
+                      원곡
+                    </span>
+                  ` : `
+                    <span class="shrink-0 px-1.5 py-0.5 rounded bg-parchment-200 dark:bg-espresso-700 text-[#6D5444] dark:text-[#C8B6A6] text-[10px] font-semibold">
+                      커버/버전
+                    </span>
+                  `}
+                  <span class="text-xs font-semibold text-mahogany-800 dark:text-[#F5E9DA] truncate">
+                    ${escapeHtml(item.title)}
+                  </span>
                 </div>
-                <div class="flex items-center gap-2 shrink-0 text-[11px] text-[#7A6252] dark:text-[#A38E7D]">
-                  ${coverTags ? `<span class="hidden sm:inline">${escapeHtml(coverTags)}</span>` : ''}
-                  <i class="fa-solid fa-play text-brass-500 text-[10px]"></i>
-                </div>
+                <span class="shrink-0 text-[11px] font-medium ${isCurrent ? 'text-mahogany-700 dark:text-brass-400 font-bold' : 'text-[#8C7362]'}">
+                  ${isCurrent ? '현재 재생 중' : '재생하기 →'}
+                </span>
               </button>
             `;
           }).join('');
         } else {
-          relatedSection.classList.add('hidden');
+          relatedSec.classList.add('hidden');
         }
       } else {
-        relatedSection.classList.add('hidden');
+        relatedSec.classList.add('hidden');
       }
 
-      // 링크 및 수정/삭제 버튼 연결
+      // 하단 유튜브 링크 & 수정 / 삭제 버튼 연결
       document.getElementById('detailYoutubeLink').href = `https://www.youtube.com/watch?v=${encodeURIComponent(song.videoId)}`;
-      toggleDeleteConfirm(false);
-
       document.getElementById('detailEditBtn').onclick = () => {
         closeDetailModal();
         openSongFormModal(song.id);
       };
-      document.getElementById('detailDeleteBtn').onclick = () => {
-        toggleDeleteConfirm(true);
-      };
-      document.getElementById('confirmDeleteExecBtn').onclick = async () => {
-        try {
-          await deleteDoc(publicDoc('songs', song.id));
-          closeDetailModal();
-          showToast('노래가 보관함에서 삭제되었습니다.');
-        } catch (err) {
-          console.error('Delete song error:', err);
-          showToast('노래 삭제 중 오류가 발생했습니다.', true);
-        }
-      };
+      toggleDeleteConfirm(false);
+      document.getElementById('detailDeleteBtn').onclick = () => toggleDeleteConfirm(true);
+      document.getElementById('confirmDeleteExecBtn').onclick = () => executeDeleteSong(song.id);
 
       openModal('songDetailModal');
+    };
+
+    window.closeDetailModal = function() {
+      const playerBox = document.getElementById('detailPlayerContainer');
+      if (playerBox) playerBox.innerHTML = '';
+      toggleDeleteConfirm(false);
+      closeModal('songDetailModal');
     };
 
     window.toggleDeleteConfirm = function(show) {
@@ -2300,15 +2287,19 @@
       else bar.classList.add('hidden');
     };
 
-    window.closeDetailModal = function() {
-      const playerBox = document.getElementById('detailPlayerContainer');
-      if (playerBox) playerBox.innerHTML = ''; // 영상 재생 즉시 중지
-      toggleDeleteConfirm(false);
-      closeModal('songDetailModal');
-    };
+    async function executeDeleteSong(songId) {
+      try {
+        await deleteDoc(publicDoc('songs', songId));
+        closeDetailModal();
+        showToast('노래가 보관함에서 삭제되었습니다.');
+      } catch (err) {
+        console.error('Delete song error:', err);
+        showToast('노래 삭제 중 오류가 발생했습니다.', true);
+      }
+    }
 
     // =========================================================================
-    // 10. 관리자(Admin) 제어 패널
+    // 9. 관리자(Admin) 패널 (이용자 계정 발급/권한/삭제 및 이용자별 청취 횟수 제어)
     // =========================================================================
     window.openAdminModal = function() {
       const me = getCurrentUser();
@@ -2321,45 +2312,44 @@
     };
 
     function renderAdminModal() {
-      const userCardsEl = document.getElementById('adminUserCardsList');
-      const targetSelect = document.getElementById('adminTargetUserSelect');
-      const prevSelectedUid = targetSelect.value;
+      const cardsBox = document.getElementById('adminUserCardsList');
+      const selectEl = document.getElementById('adminTargetUserSelect');
+      if (!cardsBox || !selectEl) return;
 
-      userCardsEl.innerHTML = state.users.map(u => {
-        const isSelf = u.id === state.currentUserId;
-        return `
-          <div class="p-3 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-900 flex items-center justify-between gap-2">
-            <div class="min-w-0">
-              <div class="flex items-center gap-1.5">
-                <span class="text-xs font-bold text-mahogany-800 dark:text-[#F5E9DA] truncate">${escapeHtml(u.displayName)}</span>
-                ${u.isAdmin ? '<span class="px-1.5 py-0.5 rounded bg-brass-500/20 text-mahogany-800 dark:text-brass-300 text-[10px] font-bold">ADMIN</span>' : ''}
-              </div>
-              <p class="text-[11px] text-[#8C7362] truncate">@${escapeHtml(u.username)}</p>
+      const prevSelectedUserId = selectEl.value;
+
+      cardsBox.innerHTML = state.users.map(u => `
+        <div class="p-3 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-900 flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <i class="fa-solid ${u.isAdmin ? 'fa-crown text-brass-500' : 'fa-user text-[#8C7362]'} text-xs"></i>
+              <span class="text-xs font-bold text-mahogany-800 dark:text-[#F5E9DA] truncate">${escapeHtml(u.displayName)}</span>
             </div>
-            <div class="flex items-center gap-1 shrink-0">
-              <button type="button" onclick="toggleUserAdmin('${escapeHtml(u.id)}')" title="관리자 권한 전환"
-                class="px-2 py-1 rounded-lg border border-parchment-300 dark:border-espresso-700 text-[11px] hover:border-brass-500 transition">
-                ${u.isAdmin ? '권한해제' : '관리자부여'}
-              </button>
-              ${!isSelf ? `
-                <button type="button" onclick="deleteUserAccount('${escapeHtml(u.id)}')" title="계정 삭제"
-                  class="px-2 py-1 rounded-lg border border-red-400/50 text-red-600 dark:text-red-400 text-[11px] hover:bg-red-500/10 transition">
-                  삭제
-                </button>
-              ` : ''}
-            </div>
+            <p class="text-[11px] text-[#8C7362] truncate">@${escapeHtml(u.username)}</p>
           </div>
-        `;
-      }).join('');
+          <div class="flex items-center gap-1 shrink-0">
+            <button type="button" onclick="toggleUserAdminRole('${escapeHtml(u.id)}')"
+              class="px-2 py-1 rounded-lg border border-parchment-300 dark:border-espresso-700 text-[10px] font-semibold hover:border-brass-500 transition">
+              ${u.isAdmin ? '관리자 해제' : '관리자 부여'}
+            </button>
+            ${u.id !== state.currentUserId ? `
+              <button type="button" onclick="deleteUserAccount('${escapeHtml(u.id)}')" title="계정 삭제"
+                class="p-1.5 rounded-lg text-red-600 hover:bg-red-500/10 text-xs">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `).join('');
 
-      targetSelect.innerHTML = state.users
-        .map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.displayName)} (@${escapeHtml(u.username)})</option>`)
-        .join('');
+      selectEl.innerHTML = state.users.map(u => `
+        <option value="${escapeHtml(u.id)}">${escapeHtml(u.displayName)} (@${escapeHtml(u.username)})</option>
+      `).join('');
 
-      if (prevSelectedUid && state.users.some(u => u.id === prevSelectedUid)) {
-        targetSelect.value = prevSelectedUid;
+      if (prevSelectedUserId && state.users.some(u => u.id === prevSelectedUserId)) {
+        selectEl.value = prevSelectedUserId;
       } else if (state.currentUserId) {
-        targetSelect.value = state.currentUserId;
+        selectEl.value = state.currentUserId;
       }
 
       renderAdminStatsTable();
@@ -2387,7 +2377,10 @@
           isAdmin,
           createdAt: Date.now()
         });
-        e.target.reset();
+        document.getElementById('adminNewUserUsername').value = '';
+        document.getElementById('adminNewUserName').value = '';
+        document.getElementById('adminNewUserPassword').value = '';
+        document.getElementById('adminNewUserIsAdmin').checked = false;
         showToast(`${displayName} 계정이 발급되었습니다.`);
       } catch (err) {
         console.error('Admin add user error:', err);
@@ -2395,34 +2388,28 @@
       }
     };
 
-    window.toggleUserAdmin = async function(targetUid) {
-      const user = state.users.find(u => u.id === targetUid);
-      if (!user) return;
-      if (user.isAdmin && state.users.filter(u => u.isAdmin).length <= 1) {
+    window.toggleUserAdminRole = async function(targetUserId) {
+      const target = state.users.find(u => u.id === targetUserId);
+      if (!target) return;
+      if (target.isAdmin && state.users.filter(u => u.isAdmin).length <= 1) {
         showToast('최소 1명의 관리자는 유지되어야 합니다.', true);
         return;
       }
       try {
-        await setDoc(publicDoc('users', targetUid), { isAdmin: !user.isAdmin }, { merge: true });
-        showToast(`${user.displayName}님의 권한이 변경되었습니다.`);
+        await setDoc(publicDoc('users', targetUserId), { ...target, isAdmin: !target.isAdmin });
+        showToast(`${target.displayName}님의 권한이 변경되었습니다.`);
       } catch (err) {
-        console.error('Toggle admin error:', err);
-        showToast('권한 변경 중 오류가 발생했습니다.', true);
+        console.error('Toggle admin role error:', err);
       }
     };
 
-    window.deleteUserAccount = async function(targetUid) {
-      if (targetUid === state.currentUserId) {
-        showToast('현재 로그인한 본인 계정은 삭제할 수 없습니다.', true);
-        return;
-      }
+    window.deleteUserAccount = async function(targetUserId) {
       try {
-        await deleteDoc(publicDoc('users', targetUid));
-        await deleteDoc(publicDoc('userStats', targetUid));
+        await deleteDoc(publicDoc('users', targetUserId));
+        await deleteDoc(publicDoc('userStats', targetUserId));
         showToast('이용자 계정이 삭제되었습니다.');
       } catch (err) {
         console.error('Delete user error:', err);
-        showToast('계정 삭제 중 오류가 발생했습니다.', true);
       }
     };
 
@@ -2436,22 +2423,26 @@
         return;
       }
 
-      const sortedSongs = [...state.songs].sort((a, b) => a.title.localeCompare(b.title, 'ko'));
+      const sortedSongs = [...state.songs].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       listEl.innerHTML = sortedSongs.map(song => {
         const count = getUserSongCount(targetUid, song.id);
         return `
-          <div class="px-4 py-2.5 flex items-center justify-between gap-3 text-xs">
-            <span class="font-medium text-mahogany-800 dark:text-[#F5E9DA] truncate flex-1">${escapeHtml(song.title)}</span>
+          <div class="px-4 py-2.5 flex items-center justify-between gap-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-xs sm:text-sm font-semibold text-mahogany-800 dark:text-[#F5E9DA] truncate">
+                ${escapeHtml(song.title)}
+              </p>
+            </div>
             <div class="flex items-center gap-1.5 shrink-0">
-              <button type="button" onclick="adjustUserSongCount('${escapeHtml(targetUid)}', '${escapeHtml(song.id)}', -1, false)"
-                class="w-7 h-7 rounded-lg border border-parchment-300 dark:border-espresso-700 hover:bg-parchment-200 dark:hover:bg-espresso-800 font-bold">
+              <button type="button" onclick="adjustUserSongStat('${escapeHtml(targetUid)}', '${escapeHtml(song.id)}', -1)"
+                class="w-7 h-7 rounded-lg border border-parchment-300 dark:border-espresso-700 hover:bg-parchment-100 dark:hover:bg-espresso-800 text-xs font-bold">
                 -
               </button>
               <input type="number" min="0" value="${count}"
-                onchange="adjustUserSongCount('${escapeHtml(targetUid)}', '${escapeHtml(song.id)}', this.value, true)"
-                class="w-16 text-center py-1 rounded-lg border border-parchment-300 dark:border-espresso-700 bg-parchment-50 dark:bg-espresso-850 font-semibold" />
-              <button type="button" onclick="adjustUserSongCount('${escapeHtml(targetUid)}', '${escapeHtml(song.id)}', 1, false)"
-                class="w-7 h-7 rounded-lg border border-parchment-300 dark:border-espresso-700 hover:bg-parchment-200 dark:hover:bg-espresso-800 font-bold">
+                onchange="setUserSongStatDirect('${escapeHtml(targetUid)}', '${escapeHtml(song.id)}', this.value)"
+                class="w-16 px-2 py-1 text-center rounded-lg border border-parchment-300 dark:border-espresso-700 bg-parchment-50 dark:bg-espresso-850 text-xs font-bold" />
+              <button type="button" onclick="adjustUserSongStat('${escapeHtml(targetUid)}', '${escapeHtml(song.id)}', 1)"
+                class="w-7 h-7 rounded-lg border border-parchment-300 dark:border-espresso-700 hover:bg-parchment-100 dark:hover:bg-espresso-800 text-xs font-bold">
                 +
               </button>
             </div>
@@ -2460,41 +2451,44 @@
       }).join('');
     };
 
-    window.adjustUserSongCount = async function(targetUid, songId, val, isExact = false) {
+    window.adjustUserSongStat = async function(targetUid, songId, delta) {
       const current = getUserSongCount(targetUid, songId);
-      const next = isExact
-        ? Math.max(0, parseInt(val, 10) || 0)
-        : Math.max(0, current + Number(val));
+      const nextVal = Math.max(0, current + delta);
+      await setUserSongStatDirect(targetUid, songId, nextVal);
+    };
 
+    window.setUserSongStatDirect = async function(targetUid, songId, rawVal) {
+      const parsed = Math.max(0, parseInt(rawVal, 10) || 0);
+      const updatedMap = { ...(state.userStats[targetUid] || {}), [songId]: parsed };
+      state.userStats[targetUid] = updatedMap;
       try {
-        await setDoc(publicDoc('userStats', targetUid), { [songId]: next }, { merge: true });
+        await setDoc(publicDoc('userStats', targetUid), updatedMap);
       } catch (err) {
-        console.error('Adjust count error:', err);
-        showToast('청취 횟수 수정 중 오류가 발생했습니다.', true);
+        console.error('Update user stat error:', err);
+        showToast('청취 횟수 수정에 실패했습니다.', true);
       }
     };
 
     window.resetTargetUserStats = async function() {
       const targetUid = document.getElementById('adminTargetUserSelect')?.value;
       if (!targetUid) return;
+      state.userStats[targetUid] = {};
       try {
         await setDoc(publicDoc('userStats', targetUid), {});
-        showToast('선택한 이용자의 모든 청취 횟수가 0으로 초기화되었습니다.');
+        showToast('선택한 이용자의 청취 횟수가 모두 0으로 초기화되었습니다.');
       } catch (err) {
-        console.error('Reset stats error:', err);
-        showToast('통계 초기화 중 오류가 발생했습니다.', true);
+        console.error('Reset user stats error:', err);
       }
     };
 
     // =========================================================================
-    // 11. JSON 백업 내보내기 / 불러오기
+    // 10. JSON 백업 내보내기 / 불러오기
     // =========================================================================
     window.exportData = function() {
       const payload = {
         exportedAt: new Date().toISOString(),
         songs: state.songs,
         tags: state.tags,
-        users: state.users,
         userStats: state.userStats
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -2504,7 +2498,7 @@
       a.download = `antique-phonograph-backup-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast('전체 데이터 JSON 백업 파일을 다운로드했습니다.');
+      showToast('보관함 백업 JSON 파일이 다운로드되었습니다.');
     };
 
     window.importData = function(event) {
@@ -2516,28 +2510,18 @@
           const parsed = JSON.parse(e.target.result);
           if (Array.isArray(parsed.tags)) {
             for (const tag of parsed.tags) {
-              if (tag.id) await setDoc(publicDoc('tags', tag.id), tag);
+              if (tag && tag.id) await setDoc(publicDoc('tags', tag.id), tag);
             }
           }
           if (Array.isArray(parsed.songs)) {
             for (const song of parsed.songs) {
-              if (song.id) await setDoc(publicDoc('songs', song.id), song);
+              if (song && song.id) await setDoc(publicDoc('songs', song.id), song);
             }
           }
-          if (Array.isArray(parsed.users)) {
-            for (const u of parsed.users) {
-              if (u.id) await setDoc(publicDoc('users', u.id), u);
-            }
-          }
-          if (parsed.userStats && typeof parsed.userStats === 'object') {
-            for (const [uid, statObj] of Object.entries(parsed.userStats)) {
-              await setDoc(publicDoc('userStats', uid), statObj);
-            }
-          }
-          showToast('JSON 백업 데이터를 공용 DB에 복원했습니다!');
+          showToast('백업 파일에서 노래와 태그를 복원했습니다.');
         } catch (err) {
-          console.error('Import error:', err);
-          showToast('유효한 백업 JSON 파일이 아닙니다.', true);
+          console.error('Import JSON error:', err);
+          showToast('올바른 JSON 백업 파일이 아닙니다.', true);
         } finally {
           event.target.value = '';
         }
@@ -2546,8 +2530,16 @@
     };
 
     // =========================================================================
-    // 애플리케이션 시작
+    // 11. 초기 실행 (테마 복원, 검색창 바인딩, 실시간 DB 연결)
     // =========================================================================
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('titleTagAutocompleteList');
+      const searchBox = document.getElementById('songTitleTagSearchInput');
+      if (dropdown && searchBox && !dropdown.contains(e.target) && e.target !== searchBox) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
     if (savedTheme === 'dark') {
       applyTheme(true);
@@ -2555,6 +2547,12 @@
       applyTheme(false);
     } else {
       applyTheme(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+
+    const searchInputEl = document.getElementById('searchInput');
+    if (searchInputEl) {
+      searchInputEl.addEventListener('input', () => renderLibrary());
+      searchInputEl.addEventListener('compositionend', () => renderLibrary());
     }
 
     initRealtimeDatabase();
