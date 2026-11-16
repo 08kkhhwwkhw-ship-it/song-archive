@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Antique Phonograph — 나만의 앤틱 노래 아카이브 </title>
+  <title>Antique Phonograph — 나만의 앤틱 노래 아카이브</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -228,7 +228,7 @@
             </h1>
             <span id="headerSyncDot" title="실시간 공용 DB 동기화 활성" class="w-2 h-2 rounded-full bg-emerald-500"></span>
           </div>
-          <p class="text-[11px] text-[#7A6252] dark:text-[#A38E7D] mt-0.5 tracking-wide">
+          <p id="headerSyncStatusText" class="text-[11px] text-[#7A6252] dark:text-[#A38E7D] mt-0.5 tracking-wide">
             실시간 공용 앤틱 노래 보관함
           </p>
         </div>
@@ -923,7 +923,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
     import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
     /**
      * =========================================================================
@@ -944,6 +944,7 @@
     const isEmbeddedEnv = typeof __firebase_config !== 'undefined';
     const firebaseConfig = isEmbeddedEnv ? JSON.parse(__firebase_config) : GITHUB_FIREBASE_CONFIG;
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'antique-phonograph-shared';
+    const SESSION_STORAGE_KEY = 'antique_phonograph_last_user_id';
 
     // Firebase 초기화
     const app = initializeApp(firebaseConfig);
@@ -1081,35 +1082,41 @@
     function publicCol(colName) {
       return collection(db, 'artifacts', appId, 'public', 'data', colName);
     }
+
     function publicDoc(colName, docId) {
       return doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
     }
 
     // =========================================================================
-    // 1. Firebase 인증 및 실시간 공용 DB 구독 초기화
+    // 1. Firebase 인증 및 실시간 공용 DB 초기화
     // =========================================================================
     async function initRealtimeDatabase() {
       const badge = document.getElementById('dbConnectionBadge');
       try {
-        // Rule 3: Auth 먼저 완료
+        // 인증 처리 (RULE 3: Auth Before Queries)
         if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-          await signInWithCustomToken(auth, __initial_auth_token);
+          const cred = await signInWithCustomToken(auth, __initial_auth_token);
+          state.fbUser = cred.user;
         } else {
-          await signInAnonymously(auth);
+          const cred = await signInAnonymously(auth);
+          state.fbUser = cred.user;
         }
-        state.fbUser = auth.currentUser;
-        if (!state.fbUser) return;
 
-        // 최초 DB가 비어 있는지 확인 후 초기 샘플 곡/태그 시드
-        const existingSongsSnap = await getDocs(publicCol('songs'));
-        const existingTagsSnap = await getDocs(publicCol('tags'));
-        if (existingSongsSnap.empty && existingTagsSnap.empty) {
-          for (const tag of INITIAL_SEED_TAGS) {
-            await setDoc(publicDoc('tags', tag.id), tag);
+        // 최초 DB가 비어 있는지 확인 후 초기 샘플 곡/태그 시드 (평생 1회만 실행)
+        const initMetaRef = publicDoc('meta', 'init');
+        const initMetaSnap = await getDoc(initMetaRef);
+        if (!initMetaSnap.exists()) {
+          const existingSongsSnap = await getDocs(publicCol('songs'));
+          const existingTagsSnap = await getDocs(publicCol('tags'));
+          if (existingSongsSnap.empty && existingTagsSnap.empty) {
+            for (const tag of INITIAL_SEED_TAGS) {
+              await setDoc(publicDoc('tags', tag.id), tag);
+            }
+            for (const song of INITIAL_SEED_SONGS) {
+              await setDoc(publicDoc('songs', song.id), song);
+            }
           }
-          for (const song of INITIAL_SEED_SONGS) {
-            await setDoc(publicDoc('songs', song.id), song);
-          }
+          await setDoc(initMetaRef, { seeded: true, seededAt: Date.now() });
         }
 
         // 실시간 리스너 1: 이용자 계정 목록
@@ -1118,6 +1125,21 @@
           snapshot.forEach(d => list.push({ id: d.id, ...d.data() }));
           list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
           state.users = list;
+
+          // 이전 로그인 세션이 브라우저에 남아 있으면 자동 로그인 복원
+          if (!state.currentUserId) {
+            try {
+              const savedUserId = localStorage.getItem(SESSION_STORAGE_KEY);
+              if (savedUserId) {
+                const matchedSaved = state.users.find(u => u.id === savedUserId);
+                if (matchedSaved) {
+                  completeUserLogin(matchedSaved);
+                }
+              }
+            } catch (storageErr) {
+              console.warn('Session restore skipped:', storageErr);
+            }
+          }
 
           // 첫 가입 안내 문구 갱신
           const hintEl = document.getElementById('firstUserAdminHint');
@@ -1190,6 +1212,7 @@
         });
 
         state.dbReady = true;
+        renderAll();
         if (badge) {
           badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span><span class="text-emerald-700 dark:text-emerald-400 font-semibold">실시간 공용 DB 연결 완료</span>`;
         }
@@ -1312,6 +1335,11 @@
 
     function completeUserLogin(user) {
       state.currentUserId = user.id;
+      try {
+        localStorage.setItem(SESSION_STORAGE_KEY, user.id);
+      } catch (storageErr) {
+        console.warn('Session save skipped:', storageErr);
+      }
       document.getElementById('loginGateOverlay').classList.add('hidden');
       document.getElementById('loginPasswordInput').value = '';
       updateHeaderUserUI();
@@ -1320,6 +1348,11 @@
 
     window.logoutUser = function() {
       state.currentUserId = null;
+      try {
+        localStorage.removeItem(SESSION_STORAGE_KEY);
+      } catch (storageErr) {
+        console.warn('Session clear skipped:', storageErr);
+      }
       closeDetailModal();
       closeModal('adminModal');
       closeModal('songFormModal');
@@ -1532,6 +1565,10 @@
     // 5. 상단 캐러셀 (최근 추가 / 현재 이용자가 자주 찾아본 노래) & 전체 보관함 렌더링
     // =========================================================================
     function renderAll() {
+      const syncStatusEl = document.getElementById('headerSyncStatusText');
+      if (syncStatusEl && state.dbReady) {
+        syncStatusEl.textContent = `클라우드 DB 실시간 동기화 중 · 총 ${state.songs.length}곡 저장됨`;
+      }
       renderCarousels();
       renderFilterBars();
       renderLibrary();
@@ -2511,10 +2548,12 @@
       }
     });
 
-    // 앱 시작
-    window.addEventListener('DOMContentLoaded', () => {
+    // 앱 시작 (모듈 로드 시점에 관계없이 즉시 초기화 보장)
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', initRealtimeDatabase);
+    } else {
       initRealtimeDatabase();
-    });
+    }
   </script>
 </body>
 </html>
