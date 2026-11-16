@@ -73,11 +73,12 @@
       background-image: radial-gradient(rgba(124, 74, 45, 0.06) 1px, transparent 0);
       background-size: 24px 24px;
     }
+    html.dark,
     html.dark .antique-bg-light,
     html.dark body {
       background-color: #120B08 !important;
       background-image: radial-gradient(rgba(212, 175, 55, 0.06) 1px, transparent 0) !important;
-      background-size: 24px 24px;
+      background-size: 24px 24px !important;
     }
 
     /* 카드 호버 부드러운 전환 */
@@ -230,7 +231,7 @@
             <span id="headerSyncDot" title="실시간 공용 DB 동기화 활성" class="w-2 h-2 rounded-full bg-emerald-500"></span>
           </div>
           <p id="headerSyncStatusText" class="text-[11px] text-[#7A6252] dark:text-[#A38E7D] mt-0.5 tracking-wide">
-            실시간 공용 앤틱 노래 보관함 (v2.3)
+            실시간 공용 앤틱 노래 보관함 (v2.4)
           </p>
         </div>
       </div>
@@ -1426,7 +1427,7 @@
     function renderAll() {
       const syncStatusEl = document.getElementById('headerSyncStatusText');
       if (syncStatusEl && state.dbReady) {
-        syncStatusEl.textContent = `클라우드 DB 실시간 동기화 중 (v2.3) · 총 ${state.songs.length}곡 저장됨`;
+        syncStatusEl.textContent = `클라우드 DB 실시간 동기화 중 (v2.4) · 총 ${state.songs.length}곡 저장됨`;
       }
       renderCarousels();
       renderFilterBars();
@@ -2039,15 +2040,18 @@
           ).length;
 
           return `
-            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-850 text-xs font-medium">
-              <span>#${escapeHtml(tag.name)}</span>
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-850 text-xs font-medium shadow-2xs">
+              <button type="button" onclick="startEditTag('${escapeHtml(tag.id)}')" title="클릭하여 태그 이름 수정"
+                class="hover:text-mahogany-600 dark:hover:text-brass-400 transition text-left">
+                #${escapeHtml(tag.name)}
+              </button>
               <span class="text-[10px] text-[#8C7362]">(${linkedCount})</span>
               <button type="button" onclick="startEditTag('${escapeHtml(tag.id)}')" title="태그 이름 수정 (적용된 노래에 일괄 반영)"
-                class="text-mahogany-700 dark:text-brass-400 hover:opacity-75 ml-0.5">
-                <i class="fa-solid fa-pen text-[10px]"></i>
+                class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-parchment-100 dark:bg-espresso-800 text-mahogany-700 dark:text-brass-400 hover:bg-brass-500/20 text-[10px] font-semibold transition ml-0.5">
+                <i class="fa-solid fa-pen text-[9px]"></i> 수정
               </button>
               <button type="button" onclick="deleteTag('${escapeHtml(tag.id)}')" title="태그 삭제"
-                class="text-red-500 hover:text-red-700 ml-0.5">
+                class="text-red-500 hover:text-red-700 ml-0.5 px-1">
                 <i class="fa-solid fa-xmark"></i>
               </button>
             </span>
