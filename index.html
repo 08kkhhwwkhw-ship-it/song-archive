@@ -88,6 +88,12 @@
     .antique-card:hover {
       transform: translateY(-4px);
     }
+
+    /* 태그 3줄 제한 클램프 스타일 */
+    .tag-row-clamped {
+      max-height: 6.1rem;
+      overflow: hidden;
+    }
   </style>
 </head>
 
@@ -217,77 +223,95 @@
   <!-- 상단 네비게이션 바 -->
   <!-- ===================================================================== -->
   <header class="sticky top-0 z-40 backdrop-blur-md bg-parchment-50/90 dark:bg-[#120B08]/92 border-b border-parchment-200 dark:border-espresso-700 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 flex flex-wrap items-center justify-between gap-2.5">
       <!-- 로고 영역 -->
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-mahogany-700 dark:bg-brass-600 text-parchment-50 flex items-center justify-center shadow-md border border-brass-400/40 shrink-0">
-          <i class="fa-solid fa-record-vinyl text-lg"></i>
+      <div class="flex items-center gap-2.5 sm:gap-3">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-mahogany-700 dark:bg-brass-600 text-parchment-50 flex items-center justify-center shadow-md border border-brass-400/40 shrink-0">
+          <i class="fa-solid fa-record-vinyl text-base sm:text-lg"></i>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="font-serif text-xl sm:text-2xl font-bold tracking-tight text-mahogany-800 dark:text-brass-400 leading-none">
+            <h1 class="font-serif text-lg sm:text-2xl font-bold tracking-tight text-mahogany-800 dark:text-brass-400 leading-none">
               Antique Phonograph
             </h1>
             <span id="headerSyncDot" title="실시간 공용 DB 동기화 활성" class="w-2 h-2 rounded-full bg-emerald-500"></span>
           </div>
           <p id="headerSyncStatusText" class="text-[11px] text-[#7A6252] dark:text-[#A38E7D] mt-0.5 tracking-wide">
-            실시간 공용 앤틱 노래 보관함 (v2.6)
+            실시간 공용 앤틱 노래 보관함 (v2.8)
           </p>
         </div>
       </div>
 
       <!-- 우측 컨트롤 버튼 모음 -->
-      <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap justify-end">
+      <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap justify-end">
         <!-- 현재 로그인한 이용자 배지 & 로그아웃 -->
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-mahogany-600/40 dark:border-brass-500/40 bg-parchment-100 dark:bg-espresso-850 shadow-xs">
+        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-mahogany-600/40 dark:border-brass-500/40 bg-parchment-100 dark:bg-espresso-850 shadow-xs">
           <i id="currentUserRoleIcon" class="fa-solid fa-crown text-brass-600 dark:text-brass-400 text-xs"></i>
           <span id="loggedInUserLabel" class="text-xs sm:text-sm font-semibold text-mahogany-800 dark:text-[#F5E9DA]">
             로그인 필요
           </span>
           <button type="button" onclick="logoutUser()" title="로그아웃"
-            class="ml-1 px-2 py-0.5 rounded-lg bg-mahogany-700/10 dark:bg-brass-500/20 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white text-mahogany-800 dark:text-brass-300 text-[11px] font-medium transition">
+            class="ml-0.5 px-1.5 py-0.5 rounded-lg bg-mahogany-700/10 dark:bg-brass-500/20 hover:bg-red-600 hover:text-white dark:hover:bg-red-600 dark:hover:text-white text-mahogany-800 dark:text-brass-300 text-[11px] font-medium transition">
             로그아웃
+          </button>
+        </div>
+
+        <!-- 화면/UI 크기 조절 컨트롤 (작게 / 기본 / 크게) -->
+        <div class="flex items-center rounded-xl border border-parchment-300 dark:border-espresso-700 bg-parchment-100 dark:bg-espresso-850 p-0.5 shadow-xs" title="전체 화면 및 글자 크기 조절">
+          <button type="button" id="scaleBtn-sm" onclick="setUiScale('sm')"
+            class="px-2 py-1 rounded-lg text-[11px] font-semibold transition">
+            작게
+          </button>
+          <button type="button" id="scaleBtn-md" onclick="setUiScale('md')"
+            class="px-2 py-1 rounded-lg text-[11px] font-semibold transition">
+            기본
+          </button>
+          <button type="button" id="scaleBtn-lg" onclick="setUiScale('lg')"
+            class="px-2 py-1 rounded-lg text-[11px] font-semibold transition">
+            크게
           </button>
         </div>
 
         <!-- 관리자 패널 버튼 (관리자 권한 이용자일 때만 노출) -->
         <button type="button" id="adminPanelBtn" onclick="openAdminModal()"
-          class="hidden px-3 py-2 rounded-xl bg-amber-800 hover:bg-amber-900 dark:bg-amber-600 dark:hover:bg-amber-500 text-parchment-50 text-xs sm:text-sm font-semibold transition items-center gap-1.5 shadow-sm">
+          class="hidden px-2.5 py-1.5 sm:py-2 rounded-xl bg-amber-800 hover:bg-amber-900 dark:bg-amber-600 dark:hover:bg-amber-500 text-parchment-50 text-xs sm:text-sm font-semibold transition items-center gap-1.5 shadow-sm">
           <i class="fa-solid fa-sliders"></i>
-          <span>관리자 패널</span>
+          <span class="hidden sm:inline">관리자 패널</span>
         </button>
 
-        <!-- JSON 백업 / 복원 -->
-        <div class="hidden xl:flex items-center gap-1.5">
-          <button type="button" onclick="exportData()" title="전체 데이터 JSON 파일로 백업"
-            class="px-2.5 py-1.5 text-xs rounded-lg border border-parchment-300 dark:border-espresso-700 hover:bg-parchment-100 dark:hover:bg-espresso-800 text-[#5C4537] dark:text-[#C8B6A6] transition flex items-center gap-1.5">
-            <i class="fa-solid fa-download"></i> 백업
+        <!-- JSON 백업 / JSON 파일로 추가(병합) -->
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="exportData()" title="현재 전체 노래와 태그를 JSON 파일로 백업 다운로드"
+            class="px-2.5 py-1.5 text-xs rounded-xl border border-parchment-300 dark:border-espresso-700 bg-parchment-100/70 dark:bg-espresso-850 hover:bg-parchment-200 dark:hover:bg-espresso-800 text-[#5C4537] dark:text-[#C8B6A6] transition flex items-center gap-1.5 shadow-2xs">
+            <i class="fa-solid fa-download"></i>
+            <span class="hidden md:inline">백업</span>
           </button>
-          <label title="JSON 백업 파일 불러오기"
-            class="cursor-pointer px-2.5 py-1.5 text-xs rounded-lg border border-parchment-300 dark:border-espresso-700 hover:bg-parchment-100 dark:hover:bg-espresso-800 text-[#5C4537] dark:text-[#C8B6A6] transition flex items-center gap-1.5">
-            <i class="fa-solid fa-upload"></i> 복원
+          <label title="기존 노래는 그대로 유지하면서 JSON 파일의 노래와 태그를 추가로 합칩니다"
+            class="cursor-pointer px-2.5 py-1.5 text-xs rounded-xl border border-mahogany-600/40 dark:border-brass-500/40 bg-parchment-100/70 dark:bg-espresso-850 hover:bg-parchment-200 dark:hover:bg-espresso-800 text-mahogany-800 dark:text-brass-300 font-medium transition flex items-center gap-1.5 shadow-2xs">
+            <i class="fa-solid fa-file-import"></i>
+            <span>JSON 추가</span>
             <input type="file" id="importInput" accept=".json" class="hidden" onchange="importData(event)" />
           </label>
         </div>
 
         <!-- 화이트 / 블랙 테마 스위치 -->
         <button type="button" id="themeToggleBtn" onclick="toggleTheme()"
-          class="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-parchment-100 dark:bg-espresso-850 hover:border-brass-500 transition text-xs sm:text-sm font-medium shadow-sm"
+          class="flex items-center gap-1.5 px-2.5 py-1.5 sm:py-2 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-parchment-100 dark:bg-espresso-850 hover:border-brass-500 transition text-xs sm:text-sm font-medium shadow-sm"
           aria-label="테마 전환">
           <span id="themeIcon" class="text-brass-600 dark:text-brass-400"><i class="fa-solid fa-moon"></i></span>
-          <span id="themeLabel" class="hidden md:inline">다크 (에스프레소)</span>
+          <span id="themeLabel" class="hidden lg:inline">다크 (에스프레소)</span>
         </button>
 
         <!-- 태그 관리 버튼 -->
         <button type="button" onclick="openTagManagerModal()"
-          class="px-3 py-2 rounded-xl border border-mahogany-600/40 dark:border-brass-500/40 bg-parchment-100 dark:bg-espresso-850 hover:bg-parchment-200 dark:hover:bg-espresso-800 text-mahogany-700 dark:text-brass-400 text-xs sm:text-sm font-medium transition flex items-center gap-1.5 shadow-sm">
+          class="px-2.5 py-1.5 sm:py-2 rounded-xl border border-mahogany-600/40 dark:border-brass-500/40 bg-parchment-100 dark:bg-espresso-850 hover:bg-parchment-200 dark:hover:bg-espresso-800 text-mahogany-700 dark:text-brass-400 text-xs sm:text-sm font-medium transition flex items-center gap-1.5 shadow-sm">
           <i class="fa-solid fa-tags"></i>
-          <span>태그 관리</span>
+          <span class="hidden sm:inline">태그 관리</span>
         </button>
 
         <!-- 노래 추가 버튼 -->
         <button type="button" onclick="openSongFormModal()"
-          class="px-3.5 py-2 rounded-xl bg-mahogany-700 hover:bg-mahogany-800 dark:bg-brass-600 dark:hover:bg-brass-500 text-parchment-50 text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 shadow-md">
+          class="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-mahogany-700 hover:bg-mahogany-800 dark:bg-brass-600 dark:hover:bg-brass-500 text-parchment-50 text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 shadow-md">
           <i class="fa-solid fa-plus"></i>
           <span>노래 추가</span>
         </button>
@@ -298,29 +322,29 @@
   <!-- ===================================================================== -->
   <!-- 메인 콘텐츠 영역 -->
   <!-- ===================================================================== -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+  <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-10 sm:space-y-12">
 
-    <!-- 상단 하이라이트 1: 최근에 추가한 노래 (최신순 3개 노출 + 좌우 슬라이드) -->
+    <!-- 상단 하이라이트 1: 최근에 추가한 노래 (모바일 2열, 태블릿 2열, PC 3열 + 좌우 슬라이드) -->
     <section aria-labelledby="recent-heading">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2.5">
-          <span class="w-1.5 h-6 rounded-full bg-mahogany-700 dark:bg-brass-500"></span>
-          <h2 id="recent-heading" class="font-serif text-xl sm:text-2xl font-bold text-mahogany-800 dark:text-[#F5E9DA]">
+      <div class="flex items-center justify-between mb-3.5">
+        <div class="flex items-center gap-2">
+          <span class="w-1.5 h-5 sm:h-6 rounded-full bg-mahogany-700 dark:bg-brass-500"></span>
+          <h2 id="recent-heading" class="font-serif text-lg sm:text-2xl font-bold text-mahogany-800 dark:text-[#F5E9DA]">
             최근에 추가한 노래
           </h2>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-parchment-200 dark:bg-espresso-800 text-[#6D5444] dark:text-[#B8A392] font-medium">
+          <span class="hidden sm:inline-block text-xs px-2 py-0.5 rounded-full bg-parchment-200 dark:bg-espresso-800 text-[#6D5444] dark:text-[#B8A392] font-medium">
             NEW ARRIVALS
           </span>
         </div>
         <!-- 좌우 슬라이드 버튼 -->
         <div class="flex items-center gap-1.5">
           <button type="button" onclick="slideCarousel('recentCarousel', -1)"
-            class="w-9 h-9 rounded-full border border-parchment-300 dark:border-espresso-700 bg-parchment-100 dark:bg-espresso-850 hover:bg-mahogany-700 hover:text-white dark:hover:bg-brass-600 dark:hover:text-espresso-950 transition flex items-center justify-center shadow-xs"
+            class="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-parchment-300 dark:border-espresso-700 bg-parchment-100 dark:bg-espresso-850 hover:bg-mahogany-700 hover:text-white dark:hover:bg-brass-600 dark:hover:text-espresso-950 transition flex items-center justify-center shadow-xs"
             aria-label="이전 최근 노래">
             <i class="fa-solid fa-chevron-left text-xs"></i>
           </button>
           <button type="button" onclick="slideCarousel('recentCarousel', 1)"
-            class="w-9 h-9 rounded-full border border-parchment-300 dark:border-espresso-700 bg-parchment-100 dark:bg-espresso-850 hover:bg-mahogany-700 hover:text-white dark:hover:bg-brass-600 dark:hover:text-espresso-950 transition flex items-center justify-center shadow-xs"
+            class="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-parchment-300 dark:border-espresso-700 bg-parchment-100 dark:bg-espresso-850 hover:bg-mahogany-700 hover:text-white dark:hover:bg-brass-600 dark:hover:text-espresso-950 transition flex items-center justify-center shadow-xs"
             aria-label="다음 최근 노래">
             <i class="fa-solid fa-chevron-right text-xs"></i>
           </button>
@@ -328,7 +352,7 @@
       </div>
 
       <!-- 가로 캐러셀 컨테이너 -->
-      <div id="recentCarousel" class="flex gap-5 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth pb-2">
+      <div id="recentCarousel" class="flex gap-3 sm:gap-5 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth pb-2">
         <!-- JS로 동적 렌더링 -->
       </div>
     </section>
@@ -340,27 +364,27 @@
       <div class="h-px flex-1 bg-gradient-to-r from-transparent via-mahogany-600/40 dark:via-brass-500/40 to-transparent"></div>
     </div>
 
-    <!-- 상단 하이라이트 2: 내가 가장 많이 찾아서 들어간 노래 (현재 이용자 기준 3개 노출 + 좌우 슬라이드) -->
+    <!-- 상단 하이라이트 2: 내가 가장 많이 찾아서 들어간 노래 -->
     <section aria-labelledby="popular-heading">
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-2.5 flex-wrap">
-          <span class="w-1.5 h-6 rounded-full bg-brass-500"></span>
-          <h2 id="popular-heading" class="font-serif text-xl sm:text-2xl font-bold text-mahogany-800 dark:text-[#F5E9DA]">
+      <div class="flex items-center justify-between mb-3.5">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="w-1.5 h-5 sm:h-6 rounded-full bg-brass-500"></span>
+          <h2 id="popular-heading" class="font-serif text-lg sm:text-2xl font-bold text-mahogany-800 dark:text-[#F5E9DA]">
             <span id="popularUserPrefix" class="text-mahogany-600 dark:text-brass-400">이용자</span>님이 자주 찾아본 노래
           </h2>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-parchment-200 dark:bg-espresso-800 text-[#6D5444] dark:text-[#B8A392] font-medium">
+          <span class="hidden sm:inline-block text-xs px-2 py-0.5 rounded-full bg-parchment-200 dark:bg-espresso-800 text-[#6D5444] dark:text-[#B8A392] font-medium">
             PERSONAL TOP PICKS
           </span>
         </div>
         <!-- 좌우 슬라이드 버튼 -->
         <div class="flex items-center gap-1.5">
           <button type="button" onclick="slideCarousel('popularCarousel', -1)"
-            class="w-9 h-9 rounded-full border border-parchment-300 dark:border-espresso-700 bg-parchment-100 dark:bg-espresso-850 hover:bg-mahogany-700 hover:text-white dark:hover:bg-brass-600 dark:hover:text-espresso-950 transition flex items-center justify-center shadow-xs"
+            class="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-parchment-300 dark:border-espresso-700 bg-parchment-100 dark:bg-espresso-850 hover:bg-mahogany-700 hover:text-white dark:hover:bg-brass-600 dark:hover:text-espresso-950 transition flex items-center justify-center shadow-xs"
             aria-label="이전 자주 찾은 노래">
             <i class="fa-solid fa-chevron-left text-xs"></i>
           </button>
           <button type="button" onclick="slideCarousel('popularCarousel', 1)"
-            class="w-9 h-9 rounded-full border border-parchment-300 dark:border-espresso-700 bg-parchment-100 dark:bg-espresso-850 hover:bg-mahogany-700 hover:text-white dark:hover:bg-brass-600 dark:hover:text-espresso-950 transition flex items-center justify-center shadow-xs"
+            class="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-parchment-300 dark:border-espresso-700 bg-parchment-100 dark:bg-espresso-850 hover:bg-mahogany-700 hover:text-white dark:hover:bg-brass-600 dark:hover:text-espresso-950 transition flex items-center justify-center shadow-xs"
             aria-label="다음 자주 찾은 노래">
             <i class="fa-solid fa-chevron-right text-xs"></i>
           </button>
@@ -368,7 +392,7 @@
       </div>
 
       <!-- 가로 캐러셀 컨테이너 -->
-      <div id="popularCarousel" class="flex gap-5 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth pb-2">
+      <div id="popularCarousel" class="flex gap-3 sm:gap-5 overflow-x-auto no-scrollbar snap-x snap-mandatory scroll-smooth pb-2">
         <!-- JS로 동적 렌더링 -->
       </div>
     </section>
@@ -381,14 +405,14 @@
     </div>
 
     <!-- 하단 메인 섹션: 태그 필터 및 전체 노래 보관함 -->
-    <section aria-labelledby="library-heading" class="space-y-6">
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <section aria-labelledby="library-heading" class="space-y-5 sm:space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3.5">
         <div>
-          <h2 id="library-heading" class="font-serif text-2xl font-bold text-mahogany-800 dark:text-[#F5E9DA]">
+          <h2 id="library-heading" class="font-serif text-xl sm:text-2xl font-bold text-mahogany-800 dark:text-[#F5E9DA]">
             전체 레코드 보관함
           </h2>
           <p class="text-xs text-[#7A6252] dark:text-[#A38E7D] mt-1">
-            노래 카드에 마우스를 올리면 유튜브 미리보기가 재생되며, 클릭 시 상세 정보 및 원곡·커버 연결 목록을 볼 수 있습니다.
+            노래 카드를 클릭하면 상세 감상 및 원곡·커버 연결 목록을 볼 수 있습니다.
           </p>
         </div>
 
@@ -420,212 +444,252 @@
         </div>
       </div>
 
-      <!-- 카테고리별 태그 필터 바 (노래 제목 / 아티스트 / 커버한 사람 / 장르) -->
+      <!-- 카테고리별 태그 필터 바 (기본 3줄까지만 노출 + 더보기/접기 토글 + 카테고리 내 빠른 태그 검색) -->
       <div class="p-4 sm:p-5 rounded-2xl border border-parchment-200 dark:border-espresso-700 bg-parchment-100/60 dark:bg-espresso-900/70 space-y-3.5 shadow-sm">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-2">
           <span class="text-xs font-semibold uppercase tracking-wider text-mahogany-700 dark:text-brass-400 flex items-center gap-1.5">
             <i class="fa-solid fa-filter"></i> 태그로 골라보기 (중복 선택 가능)
           </span>
-          <span id="resultCountBadge" class="text-xs text-[#7A6252] dark:text-[#A38E7D] font-medium">
-            총 0곡
-          </span>
+          <div class="flex items-center gap-2">
+            <div class="relative">
+              <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-[#8C7362] text-[10px]"></i>
+              <input type="text" id="filterTagQuickSearch" oninput="renderFilterBars()"
+                placeholder="태그 목록 내 찾기..."
+                class="w-36 sm:w-44 pl-7 pr-2.5 py-1 rounded-lg border border-parchment-300 dark:border-espresso-700 bg-white/90 dark:bg-espresso-850 text-xs focus:outline-none focus:border-brass-500" />
+            </div>
+            <span id="resultCountBadge" class="text-xs text-[#7A6252] dark:text-[#A38E7D] font-medium">
+              총 0곡
+            </span>
+          </div>
         </div>
 
-        <!-- 4개 카테고리 필터 줄 -->
-        <div class="space-y-2.5 text-sm">
+        <!-- 4개 카테고리 필터 줄 (각각 3줄 초과 시 더보기 버튼 자동 표시) -->
+        <div class="space-y-3 text-sm divide-y divide-parchment-200/70 dark:divide-espresso-800/70">
           <!-- 노래 제목 태그 (원곡-커버 묶음) -->
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="w-24 shrink-0 text-xs font-semibold px-2.5 py-1 rounded-md bg-brass-500/20 text-mahogany-800 dark:text-brass-300 text-center">
+          <div class="flex items-start gap-2 pt-0">
+            <span class="w-20 sm:w-24 shrink-0 mt-0.5 text-[11px] sm:text-xs font-semibold px-2 py-1 rounded-md bg-brass-500/20 text-mahogany-800 dark:text-brass-300 text-center">
               <i class="fa-solid fa-music mr-1"></i>노래 제목
             </span>
-            <div id="filterTagsSongTitle" class="flex flex-wrap gap-1.5"></div>
+            <div class="flex-1 min-w-0">
+              <div id="filterTagsSongTitle" class="flex flex-wrap gap-1.5"></div>
+              <div id="moreBtnWrap-songTitle" class="mt-1.5 hidden"></div>
+            </div>
           </div>
 
           <!-- 아티스트 -->
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="w-24 shrink-0 text-xs font-semibold px-2.5 py-1 rounded-md bg-mahogany-700/10 dark:bg-brass-500/15 text-mahogany-800 dark:text-brass-400 text-center">
+          <div class="flex items-start gap-2 pt-2.5">
+            <span class="w-20 sm:w-24 shrink-0 mt-0.5 text-[11px] sm:text-xs font-semibold px-2 py-1 rounded-md bg-mahogany-700/10 dark:bg-brass-500/15 text-mahogany-800 dark:text-brass-400 text-center">
               <i class="fa-solid fa-microphone-lines mr-1"></i>아티스트
             </span>
-            <div id="filterTagsArtist" class="flex flex-wrap gap-1.5"></div>
+            <div class="flex-1 min-w-0">
+              <div id="filterTagsArtist" class="flex flex-wrap gap-1.5"></div>
+              <div id="moreBtnWrap-artist" class="mt-1.5 hidden"></div>
+            </div>
           </div>
 
           <!-- 커버한 사람 -->
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="w-24 shrink-0 text-xs font-semibold px-2.5 py-1 rounded-md bg-amber-800/10 dark:bg-amber-500/15 text-amber-900 dark:text-amber-300 text-center">
+          <div class="flex items-start gap-2 pt-2.5">
+            <span class="w-20 sm:w-24 shrink-0 mt-0.5 text-[11px] sm:text-xs font-semibold px-2 py-1 rounded-md bg-amber-800/10 dark:bg-amber-500/15 text-amber-900 dark:text-amber-300 text-center">
               <i class="fa-solid fa-headphones mr-1"></i>커버한 사람
             </span>
-            <div id="filterTagsCover" class="flex flex-wrap gap-1.5"></div>
+            <div class="flex-1 min-w-0">
+              <div id="filterTagsCover" class="flex flex-wrap gap-1.5"></div>
+              <div id="moreBtnWrap-cover" class="mt-1.5 hidden"></div>
+            </div>
           </div>
 
           <!-- 장르 -->
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="w-24 shrink-0 text-xs font-semibold px-2.5 py-1 rounded-md bg-stone-700/10 dark:bg-stone-400/15 text-stone-800 dark:text-stone-300 text-center">
+          <div class="flex items-start gap-2 pt-2.5">
+            <span class="w-20 sm:w-24 shrink-0 mt-0.5 text-[11px] sm:text-xs font-semibold px-2 py-1 rounded-md bg-stone-700/10 dark:bg-stone-400/15 text-stone-800 dark:text-stone-300 text-center">
               <i class="fa-solid fa-compact-disc mr-1"></i>장르
             </span>
-            <div id="filterTagsGenre" class="flex flex-wrap gap-1.5"></div>
+            <div class="flex-1 min-w-0">
+              <div id="filterTagsGenre" class="flex flex-wrap gap-1.5"></div>
+              <div id="moreBtnWrap-genre" class="mt-1.5 hidden"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- 전체 노래 그리드 -->
-      <div id="allSongsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- 전체 노래 그리드 (모바일에서도 가로 2열 grid-cols-2 적용!) -->
+      <div id="allSongsGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6">
         <!-- JS로 동적 렌더링 -->
       </div>
     </section>
   </main>
 
   <!-- ===================================================================== -->
-  <!-- 모달 1: 노래 추가 / 수정 모달 -->
+  <!-- 모달 1: 노래 추가 / 수정 모달 (더 넓고 시원한 크기 + 태그 실시간 검색 기능 추가) -->
   <!-- ===================================================================== -->
-  <div id="songFormModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 backdrop-blur-xs p-4 overflow-y-auto">
-    <div class="bg-parchment-50 dark:bg-espresso-900 border border-parchment-300 dark:border-espresso-700 rounded-2xl max-w-xl w-full p-6 shadow-2xl my-auto">
-      <div class="flex items-center justify-between pb-3 border-b border-parchment-200 dark:border-espresso-800">
-        <h3 id="songFormTitle" class="font-serif text-xl font-bold text-mahogany-800 dark:text-brass-400">
+  <div id="songFormModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 backdrop-blur-xs p-3 sm:p-5 overflow-y-auto">
+    <div class="bg-parchment-50 dark:bg-espresso-900 border border-parchment-300 dark:border-espresso-700 rounded-2xl max-w-3xl w-full p-5 sm:p-7 shadow-2xl my-auto">
+      <div class="flex items-center justify-between pb-3.5 border-b border-parchment-200 dark:border-espresso-800">
+        <h3 id="songFormTitle" class="font-serif text-xl sm:text-2xl font-bold text-mahogany-800 dark:text-brass-400">
           새 노래 아카이브에 추가
         </h3>
-        <button type="button" onclick="closeModal('songFormModal')" class="text-[#7A6252] hover:text-mahogany-800 dark:hover:text-white p-1">
-          <i class="fa-solid fa-xmark text-lg"></i>
+        <button type="button" onclick="closeModal('songFormModal')" class="text-[#7A6252] hover:text-mahogany-800 dark:hover:text-white p-1.5">
+          <i class="fa-solid fa-xmark text-xl"></i>
         </button>
       </div>
 
-      <form id="songForm" onsubmit="handleSaveSong(event)" class="mt-4 space-y-4">
+      <form id="songForm" onsubmit="handleSaveSong(event)" class="mt-4 space-y-4 sm:space-y-5">
         <input type="hidden" id="editSongId" />
 
-        <!-- 곡 제목 -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider mb-1 text-[#5C4537] dark:text-[#C8B6A6]">
-            곡 제목 (표시명) <span class="text-red-500">*</span>
-          </label>
-          <input type="text" id="songTitleInput" required placeholder="예: Lemon (다즈비 Cover)"
-            class="w-full px-3.5 py-2 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-850 focus:outline-none focus:border-brass-500 text-sm" />
+        <!-- 곡 제목 & 유튜브 URL (큰 화면에서는 2열로 깔끔하게 배치) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs sm:text-sm font-semibold uppercase tracking-wider mb-1.5 text-[#5C4537] dark:text-[#C8B6A6]">
+              곡 제목 (표시명) <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="songTitleInput" required placeholder="예: Lemon (다즈비 Cover)"
+              class="w-full px-4 py-2.5 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-850 focus:outline-none focus:border-brass-500 text-sm sm:text-base" />
+          </div>
+
+          <div>
+            <label class="block text-xs sm:text-sm font-semibold uppercase tracking-wider mb-1.5 text-[#5C4537] dark:text-[#C8B6A6]">
+              유튜브 링크 (URL 또는 영상 ID) <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="songUrlInput" required placeholder="https://www.youtube.com/watch?v=..."
+              class="w-full px-4 py-2.5 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-850 focus:outline-none focus:border-brass-500 text-sm sm:text-base" />
+          </div>
         </div>
 
         <!-- 노래 제목 태그 (원곡-커버곡 연결용 고유 그룹 태그 + 실시간 자동완성 리스트) -->
-        <div class="p-3.5 rounded-xl bg-brass-500/10 dark:bg-brass-500/10 border border-brass-500/30 space-y-2.5">
+        <div class="p-4 rounded-xl bg-brass-500/10 dark:bg-brass-500/10 border border-brass-500/30 space-y-3">
           <div class="flex items-center justify-between gap-2 flex-wrap">
-            <label class="text-xs font-bold text-mahogany-800 dark:text-brass-400 flex items-center gap-1.5">
+            <label class="text-xs sm:text-sm font-bold text-mahogany-800 dark:text-brass-400 flex items-center gap-1.5">
               <i class="fa-solid fa-link"></i> 노래 제목 태그 (원곡 & 커버 연결용)
             </label>
             <!-- 원곡(Original) 여부 토글 체크박스 -->
-            <label class="inline-flex items-center gap-1.5 cursor-pointer select-none px-2.5 py-1 rounded-lg bg-white/80 dark:bg-espresso-900 border border-parchment-300 dark:border-espresso-700 text-xs font-semibold text-mahogany-800 dark:text-brass-300">
-              <input type="checkbox" id="isOriginalCheckbox" class="accent-mahogany-700 dark:accent-brass-500 w-3.5 h-3.5 rounded" />
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none px-3 py-1.5 rounded-lg bg-white/90 dark:bg-espresso-900 border border-parchment-300 dark:border-espresso-700 text-xs sm:text-sm font-semibold text-mahogany-800 dark:text-brass-300">
+              <input type="checkbox" id="isOriginalCheckbox" class="accent-mahogany-700 dark:accent-brass-500 w-4 h-4 rounded" />
               <span>이 곡은 원곡(Original)입니다</span>
             </label>
           </div>
 
           <!-- 선택된 노래 제목 태그 표시 칩 -->
-          <div id="selectedTitleTagDisplay" class="min-h-[28px] flex items-center flex-wrap gap-1.5">
-            <span class="text-[11px] text-[#8C7362] italic">연결된 노래 제목 태그가 없습니다. 아래에서 검색해 선택하거나 새로 추가하세요.</span>
+          <div id="selectedTitleTagDisplay" class="min-h-[32px] flex items-center flex-wrap gap-1.5">
+            <span class="text-xs text-[#8C7362] italic">연결된 노래 제목 태그가 없습니다. 아래에서 검색해 선택하거나 새로 추가하세요.</span>
           </div>
 
           <!-- 자동완성 검색 입력창 + 별도의 새 제목 태그 추가 버튼 -->
-          <div class="relative flex gap-1.5">
+          <div class="relative flex flex-col sm:flex-row gap-2">
             <div class="relative flex-1">
-              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[#8C7362] text-xs"></i>
+              <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#8C7362] text-xs"></i>
               <input type="text" id="songTitleTagSearchInput"
                 autocomplete="off"
                 onfocus="openTitleTagDropdown()"
                 oninput="renderTitleTagDropdown()"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();}"
                 placeholder="기존 노래 제목 태그 검색 및 리스트 선택..."
-                class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-900 text-xs focus:outline-none focus:border-brass-500" />
+                class="w-full pl-9 pr-3.5 py-2 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-900 text-xs sm:text-sm focus:outline-none focus:border-brass-500" />
               <!-- 자동완성 추천 리스트 드롭다운 -->
               <div id="titleTagAutocompleteList"
-                class="hidden absolute left-0 right-0 top-full mt-1 z-30 max-h-40 overflow-y-auto rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-900 shadow-xl divide-y divide-parchment-100 dark:divide-espresso-800">
+                class="hidden absolute left-0 right-0 top-full mt-1 z-30 max-h-48 overflow-y-auto rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-900 shadow-xl divide-y divide-parchment-100 dark:divide-espresso-800">
               </div>
             </div>
             <button type="button" onclick="openNewTitleTagBox()"
-              class="px-3 py-1.5 rounded-lg bg-mahogany-700 hover:bg-mahogany-800 dark:bg-brass-600 dark:hover:bg-brass-500 text-white text-xs font-semibold whitespace-nowrap transition shadow-xs">
+              class="px-3.5 py-2 rounded-xl bg-mahogany-700 hover:bg-mahogany-800 dark:bg-brass-600 dark:hover:bg-brass-500 text-white text-xs sm:text-sm font-semibold whitespace-nowrap transition shadow-xs">
               + 새 제목 태그 추가
             </button>
           </div>
 
           <!-- 새 노래 제목 태그 직접 입력 영역 (버튼 클릭 시 표시) -->
           <div id="newTitleTagInlineBox" class="hidden pt-1">
-            <div class="flex items-center gap-1.5 p-2 rounded-lg bg-white/90 dark:bg-espresso-900 border border-brass-500/50 shadow-xs">
+            <div class="flex items-center gap-2 p-2.5 rounded-xl bg-white/95 dark:bg-espresso-900 border border-brass-500/50 shadow-xs">
               <i class="fa-solid fa-pen text-brass-600 dark:text-brass-400 text-xs pl-1"></i>
               <input type="text" id="newSongTitleTagNameInput"
                 autocomplete="off"
                 onkeydown="if(event.key==='Enter'){event.preventDefault(); confirmCreateSongTitleTag();} else if(event.key==='Escape'){event.preventDefault(); closeNewTitleTagBox();}"
                 placeholder="새 노래 제목 태그명을 직접 입력하세요..."
-                class="flex-1 px-2 py-1 bg-transparent text-xs text-mahogany-800 dark:text-[#F5E9DA] focus:outline-none" />
+                class="flex-1 px-2 py-1 bg-transparent text-xs sm:text-sm text-mahogany-800 dark:text-[#F5E9DA] focus:outline-none" />
               <button type="button" onclick="confirmCreateSongTitleTag()"
-                class="px-2.5 py-1 rounded-md bg-mahogany-700 hover:bg-mahogany-800 dark:bg-brass-600 dark:hover:bg-brass-500 text-white text-xs font-semibold transition">
+                class="px-3 py-1.5 rounded-lg bg-mahogany-700 hover:bg-mahogany-800 dark:bg-brass-600 dark:hover:bg-brass-500 text-white text-xs font-semibold transition">
                 등록
               </button>
               <button type="button" onclick="closeNewTitleTagBox()"
-                class="px-2 py-1 rounded-md border border-parchment-300 dark:border-espresso-700 text-[#7A6252] dark:text-[#A38E7D] hover:bg-parchment-100 dark:hover:bg-espresso-800 text-xs transition">
+                class="px-2.5 py-1.5 rounded-lg border border-parchment-300 dark:border-espresso-700 text-[#7A6252] dark:text-[#A38E7D] hover:bg-parchment-100 dark:hover:bg-espresso-800 text-xs transition">
                 취소
               </button>
             </div>
           </div>
         </div>
 
-        <!-- 유튜브 URL -->
-        <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider mb-1 text-[#5C4537] dark:text-[#C8B6A6]">
-            유튜브 링크 (URL 또는 영상 ID) <span class="text-red-500">*</span>
-          </label>
-          <input type="text" id="songUrlInput" required placeholder="https://www.youtube.com/watch?v=..."
-            class="w-full px-3.5 py-2 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-850 focus:outline-none focus:border-brass-500 text-sm" />
-        </div>
-
         <!-- 한 줄 메모 (키 조절, 노래방 번호 등) -->
         <div>
-          <label class="block text-xs font-semibold uppercase tracking-wider mb-1 text-[#5C4537] dark:text-[#C8B6A6]">
+          <label class="block text-xs sm:text-sm font-semibold uppercase tracking-wider mb-1.5 text-[#5C4537] dark:text-[#C8B6A6]">
             메모 (키 조절 / 노래방 번호 / 감상 포인트)
           </label>
           <input type="text" id="songMemoInput" placeholder="예: -2키 조절, TJ 28491, 후렴 고음 주의"
-            class="w-full px-3.5 py-2 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-850 focus:outline-none focus:border-brass-500 text-sm" />
+            class="w-full px-4 py-2.5 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-850 focus:outline-none focus:border-brass-500 text-sm sm:text-base" />
         </div>
 
-        <!-- 태그 선택 및 빠른 태그 생성 -->
-        <div class="p-3.5 rounded-xl bg-parchment-100/80 dark:bg-espresso-850 border border-parchment-200 dark:border-espresso-700 space-y-3">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-mahogany-800 dark:text-brass-400">태그 달기 (클릭해서 선택)</span>
+        <!-- 태그 선택 (검색 기능 + 선택된 태그 요약 + 빠른 새 태그 생성) -->
+        <div class="p-4 rounded-xl bg-parchment-100/80 dark:bg-espresso-850 border border-parchment-200 dark:border-espresso-700 space-y-3.5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <span class="text-xs sm:text-sm font-bold text-mahogany-800 dark:text-brass-400">
+              <i class="fa-solid fa-tags mr-1"></i>아티스트 / 커버 / 장르 태그 달기
+            </span>
+            <!-- 기존 태그 검색창 (태그가 많아져도 즉시 필터링!) -->
+            <div class="relative flex-1 sm:max-w-xs">
+              <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[#8C7362] text-xs"></i>
+              <input type="text" id="formTagSearchInput"
+                oninput="renderSongFormTagSelectors()"
+                placeholder="달고 싶은 태그 이름 검색..."
+                class="w-full pl-8 pr-7 py-1.5 rounded-lg border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-900 text-xs sm:text-sm focus:outline-none focus:border-brass-500" />
+              <button type="button" id="clearFormTagSearchBtn" onclick="clearFormTagSearch()"
+                class="hidden absolute right-2 top-1/2 -translate-y-1/2 text-[#8C7362] hover:text-mahogany-800 dark:hover:text-white text-xs">
+                <i class="fa-solid fa-circle-xmark"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- 현재 선택된 태그 미리보기 바 -->
+          <div id="formSelectedTagsSummary" class="flex flex-wrap items-center gap-1.5 min-h-[26px]">
+            <span class="text-xs text-[#8C7362] italic">선택된 태그가 없습니다.</span>
           </div>
 
           <!-- 빠른 새 태그 추가 인라인 폼 -->
-          <div class="flex gap-1.5">
+          <div class="flex flex-wrap sm:flex-nowrap gap-2 pt-1 border-t border-parchment-200/80 dark:border-espresso-700/80">
             <select id="quickTagCategory"
-              class="px-2.5 py-1.5 rounded-lg border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-900 text-xs focus:outline-none">
+              class="px-3 py-2 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-900 text-xs sm:text-sm focus:outline-none">
               <option value="artist">아티스트</option>
               <option value="cover">커버한 사람</option>
               <option value="genre">장르</option>
             </select>
-            <input type="text" id="quickTagName" placeholder="새 태그 이름 입력..."
+            <input type="text" id="quickTagName" placeholder="새 태그가 필요하면 이름 입력 후 추가..."
               onkeydown="if(event.key==='Enter'){event.preventDefault(); addQuickTag();}"
-              class="flex-1 px-3 py-1.5 rounded-lg border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-900 text-xs focus:outline-none focus:border-brass-500" />
+              class="flex-1 px-3.5 py-2 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-white dark:bg-espresso-900 text-xs sm:text-sm focus:outline-none focus:border-brass-500" />
             <button type="button" onclick="addQuickTag()"
-              class="px-3 py-1.5 rounded-lg bg-mahogany-700 dark:bg-brass-600 text-white text-xs font-medium hover:opacity-90 transition">
-              + 추가
+              class="px-4 py-2 rounded-xl bg-mahogany-700 dark:bg-brass-600 text-white text-xs sm:text-sm font-semibold hover:opacity-90 transition shrink-0">
+              + 새 태그 생성
             </button>
           </div>
 
-          <!-- 카테고리별 선택 칩 목록 -->
-          <div class="space-y-2 max-h-40 overflow-y-auto pr-1 text-xs">
+          <!-- 카테고리별 선택 칩 목록 (높이를 넉넉하게 확장) -->
+          <div class="space-y-3 max-h-56 overflow-y-auto pr-1 text-xs sm:text-sm">
             <div>
-              <span class="font-semibold text-[#6D5444] dark:text-[#B8A392] block mb-1">아티스트</span>
+              <span class="font-semibold text-[#6D5444] dark:text-[#B8A392] block mb-1.5">아티스트</span>
               <div id="formTagsArtist" class="flex flex-wrap gap-1.5"></div>
             </div>
             <div>
-              <span class="font-semibold text-[#6D5444] dark:text-[#B8A392] block mb-1">커버한 사람</span>
+              <span class="font-semibold text-[#6D5444] dark:text-[#B8A392] block mb-1.5">커버한 사람</span>
               <div id="formTagsCover" class="flex flex-wrap gap-1.5"></div>
             </div>
             <div>
-              <span class="font-semibold text-[#6D5444] dark:text-[#B8A392] block mb-1">장르</span>
+              <span class="font-semibold text-[#6D5444] dark:text-[#B8A392] block mb-1.5">장르</span>
               <div id="formTagsGenre" class="flex flex-wrap gap-1.5"></div>
             </div>
           </div>
         </div>
 
-        <div class="flex justify-end gap-2 pt-2">
+        <div class="flex justify-end gap-2.5 pt-2">
           <button type="button" onclick="closeModal('songFormModal')"
-            class="px-4 py-2 rounded-xl border border-parchment-300 dark:border-espresso-700 text-sm hover:bg-parchment-100 dark:hover:bg-espresso-800 transition">
+            class="px-5 py-2.5 rounded-xl border border-parchment-300 dark:border-espresso-700 text-sm hover:bg-parchment-100 dark:hover:bg-espresso-800 transition">
             취소
           </button>
           <button type="submit"
-            class="px-5 py-2 rounded-xl bg-mahogany-700 hover:bg-mahogany-800 dark:bg-brass-600 dark:hover:bg-brass-500 text-white text-sm font-semibold transition shadow-md">
+            class="px-6 py-2.5 rounded-xl bg-mahogany-700 hover:bg-mahogany-800 dark:bg-brass-600 dark:hover:bg-brass-500 text-white text-sm sm:text-base font-semibold transition shadow-md">
             저장하기
           </button>
         </div>
@@ -637,7 +701,7 @@
   <!-- 모달 2: 태그 전용 관리 모달 -->
   <!-- ===================================================================== -->
   <div id="tagManagerModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/65 backdrop-blur-xs p-4 overflow-y-auto">
-    <div class="bg-parchment-50 dark:bg-espresso-900 border border-parchment-300 dark:border-espresso-700 rounded-2xl max-w-lg w-full p-6 shadow-2xl my-auto">
+    <div class="bg-parchment-50 dark:bg-espresso-900 border border-parchment-300 dark:border-espresso-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl my-auto">
       <div class="flex items-center justify-between pb-3 border-b border-parchment-200 dark:border-espresso-800">
         <h3 class="font-serif text-xl font-bold text-mahogany-800 dark:text-brass-400">
           태그 목록 관리
@@ -668,7 +732,7 @@
       <div class="mt-4 flex items-center justify-between text-[11px] text-[#7A6252] dark:text-[#A38E7D]">
         <span><i class="fa-solid fa-pen mr-1 text-brass-500"></i>연필 아이콘을 누르면 태그 이름을 수정할 수 있으며, 연결된 모든 노래에 일괄 반영됩니다.</span>
       </div>
-      <div class="mt-3 space-y-4 max-h-80 overflow-y-auto pr-1">
+      <div class="mt-3 space-y-4 max-h-96 overflow-y-auto pr-1">
         <div>
           <h4 class="text-xs font-bold uppercase tracking-wider text-mahogany-800 dark:text-brass-400 mb-2">
             <i class="fa-solid fa-music mr-1"></i> 노래 제목 태그 (원곡-커버 연결용)
@@ -714,14 +778,14 @@
         <!-- 클릭 시 iframe 삽입 -->
       </div>
 
-      <div class="p-6 space-y-4">
+      <div class="p-5 sm:p-6 space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
           <div>
             <div class="flex items-center gap-2 flex-wrap">
               <span id="detailOriginalBadge" class="hidden px-2 py-0.5 rounded-md bg-mahogany-700 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-[11px] font-bold tracking-wide">
                 ORIGINAL 원곡
               </span>
-              <h3 id="detailTitle" class="font-serif text-2xl font-bold text-mahogany-800 dark:text-[#F5E9DA]">
+              <h3 id="detailTitle" class="font-serif text-xl sm:text-2xl font-bold text-mahogany-800 dark:text-[#F5E9DA]">
                 곡 제목
               </h3>
             </div>
@@ -760,7 +824,7 @@
           </div>
         </div>
 
-        <!-- 삭제 확인 인라인 바 (confirm() 대신 커스텀 UI 사용) -->
+        <!-- 삭제 확인 인라인 바 -->
         <div id="deleteConfirmBar" class="hidden p-3 rounded-xl bg-red-500/10 border border-red-500/40 flex flex-wrap items-center justify-between gap-2 text-xs">
           <span class="font-semibold text-red-700 dark:text-red-300">
             <i class="fa-solid fa-triangle-exclamation mr-1"></i>이 노래를 공용 보관함에서 영구 삭제할까요?
@@ -964,6 +1028,7 @@
     const appId = typeof __app_id !== 'undefined' ? __app_id : 'antique-phonograph-shared';
     const SESSION_STORAGE_KEY = 'antique_phonograph_last_user_id';
     const THEME_STORAGE_KEY = 'antique_phonograph_theme';
+    const SCALE_STORAGE_KEY = 'antique_phonograph_ui_scale';
 
     // Firebase 초기화
     const app = initializeApp(firebaseConfig);
@@ -982,10 +1047,17 @@
       tags: [],           // [{ id, name, category: 'songTitle'|'artist'|'cover'|'genre' }]
       userStats: {},      // { [userId]: { [songId]: number } }
       selectedFilterTagIds: new Set(),
+      expandedFilterCategories: {
+        songTitle: false,
+        artist: false,
+        cover: false,
+        genre: false
+      },
       formSelectedTagIds: new Set(),
       formSelectedSongTitleTagId: null,
       editingTagId: null,
-      darkMode: false
+      darkMode: false,
+      uiScale: 'md'       // 'sm' | 'md' | 'lg'
     };
 
     // =========================================================================
@@ -1034,7 +1106,7 @@
       clearTimeout(window._toastTimer);
       window._toastTimer = setTimeout(() => {
         box.classList.add('opacity-0', 'translate-y-2');
-      }, 2800);
+      }, 3200);
     }
 
     function getCurrentUser() {
@@ -1064,6 +1136,35 @@
     }
 
     // =========================================================================
+    // 0. 전체 UI 크기 배율 조절 (작게 / 기본 / 크게)
+    // =========================================================================
+    window.setUiScale = function(scaleKey) {
+      const scaleMap = {
+        sm: '14px',
+        md: '16px',
+        lg: '18.5px'
+      };
+      const resolved = scaleMap[scaleKey] ? scaleKey : 'md';
+      state.uiScale = resolved;
+      document.documentElement.style.fontSize = scaleMap[resolved];
+      localStorage.setItem(SCALE_STORAGE_KEY, resolved);
+
+      ['sm', 'md', 'lg'].forEach(key => {
+        const btn = document.getElementById(`scaleBtn-${key}`);
+        if (!btn) return;
+        if (key === resolved) {
+          btn.className = 'px-2 py-1 rounded-lg text-[11px] font-bold bg-mahogany-700 text-parchment-50 dark:bg-brass-600 dark:text-espresso-950 shadow-2xs transition';
+        } else {
+          btn.className = 'px-2 py-1 rounded-lg text-[11px] font-medium text-[#6D5444] dark:text-[#A38E7D] hover:text-mahogany-800 dark:hover:text-white transition';
+        }
+      });
+
+      if (state.tags.length > 0) {
+        renderFilterBars();
+      }
+    };
+
+    // =========================================================================
     // 1. Firebase 인증 및 실시간 공용 DB 초기화
     // =========================================================================
     async function initRealtimeDatabase() {
@@ -1086,7 +1187,6 @@
           list.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
           state.users = list;
 
-          // 첫 계정 관리자 안내 문구 업데이트
           const hintEl = document.getElementById('firstUserAdminHint');
           if (hintEl) {
             if (state.users.length === 0) {
@@ -1096,7 +1196,6 @@
             }
           }
 
-          // 저장된 세션 자동 복원
           if (!state.currentUserId) {
             const savedUid = localStorage.getItem(SESSION_STORAGE_KEY);
             if (savedUid && state.users.some(u => u.id === savedUid)) {
@@ -1391,12 +1490,12 @@
     };
 
     // =========================================================================
-    // 5. 렌더링 (상단 캐러셀, 태그 필터, 전체 그리드)
+    // 5. 렌더링 (상단 캐러셀, 태그 필터 3줄 제한/더보기, 전체 그리드)
     // =========================================================================
     function renderAll() {
       const syncStatusEl = document.getElementById('headerSyncStatusText');
       if (syncStatusEl && state.dbReady) {
-        syncStatusEl.textContent = `클라우드 DB 실시간 동기화 중 (v2.6) · 총 ${state.songs.length}곡 저장됨`;
+        syncStatusEl.textContent = `클라우드 DB 실시간 동기화 중 (v2.8) · 총 ${state.songs.length}곡 저장됨`;
       }
       renderCarousels();
       renderFilterBars();
@@ -1414,7 +1513,7 @@
       if (state.songs.length === 0) {
         const emptyHtml = `
           <div class="w-full py-10 text-center rounded-2xl border border-dashed border-parchment-300 dark:border-espresso-700 text-xs text-[#7A6252] dark:text-[#A38E7D]">
-            아직 등록된 노래가 없습니다. 우측 상단의 <strong>[+ 노래 추가]</strong> 버튼으로 첫 번째 레코드를 등록해 보세요!
+            아직 등록된 노래가 없습니다. 우측 상단의 <strong>[+ 노래 추가]</strong> 또는 <strong>[JSON 추가]</strong> 버튼으로 레코드를 등록해 보세요!
           </div>
         `;
         recentEl.innerHTML = emptyHtml;
@@ -1439,7 +1538,7 @@
     window.slideCarousel = function(containerId, direction) {
       const container = document.getElementById(containerId);
       if (!container) return;
-      const step = Math.max(280, Math.floor(container.clientWidth * 0.85));
+      const step = Math.max(240, Math.floor(container.clientWidth * 0.85));
       container.scrollBy({ left: direction * step, behavior: 'smooth' });
     };
 
@@ -1448,14 +1547,13 @@
       const myCount = me ? getUserSongCount(me.id, song.id) : getTotalSongCount(song.id);
       const thumbUrl = `https://i.ytimg.com/vi/${encodeURIComponent(song.videoId)}/hqdefault.jpg`;
 
-      // 노래 제목 태그 및 일반 태그 조합
       const titleTag = song.songTitleTagId ? state.tags.find(t => t.id === song.songTitleTagId) : null;
       const normalTags = (song.tagIds || [])
         .map(tid => state.tags.find(t => t.id === tid))
         .filter(Boolean);
 
       const widthClass = isCarousel
-        ? 'snap-start shrink-0 w-[85%] sm:w-[47%] lg:w-[31.8%]'
+        ? 'snap-start shrink-0 w-[47.5%] sm:w-[47%] lg:w-[31.8%]'
         : 'w-full';
 
       return `
@@ -1463,7 +1561,7 @@
           onclick="openDetailModal('${escapeHtml(song.id)}')"
           onmouseenter="startCardPreview(this, '${escapeHtml(song.videoId)}')"
           onmouseleave="stopCardPreview(this)"
-          class="antique-card group cursor-pointer rounded-2xl border border-parchment-300/80 dark:border-espresso-700 bg-white/95 dark:bg-espresso-900/95 shadow-sm hover:shadow-xl hover:border-brass-500/70 overflow-hidden flex flex-col justify-between ${widthClass}">
+          class="antique-card group cursor-pointer rounded-xl sm:rounded-2xl border border-parchment-300/80 dark:border-espresso-700 bg-white/95 dark:bg-espresso-900/95 shadow-sm hover:shadow-xl hover:border-brass-500/70 overflow-hidden flex flex-col justify-between ${widthClass}">
 
           <div>
             <!-- 16:9 썸네일 & 호버 유튜브 미리보기 컨테이너 -->
@@ -1479,56 +1577,56 @@
               <div class="preview-slot absolute inset-0 pointer-events-none hidden"></div>
 
               <!-- 상단 배지 (원곡 배지 + 노래 제목 태그 + 개인 청취 횟수) -->
-              <div class="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between gap-1.5 pointer-events-none">
-                <div class="flex items-center gap-1 flex-wrap">
+              <div class="absolute top-1.5 left-1.5 right-1.5 sm:top-2.5 sm:left-2.5 sm:right-2.5 flex items-start justify-between gap-1 pointer-events-none">
+                <div class="flex items-center gap-1 flex-wrap min-w-0">
                   ${song.isOriginal ? `
-                    <span class="px-2 py-0.5 rounded-md bg-mahogany-700/95 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-[10px] font-bold tracking-wider shadow-sm">
+                    <span class="px-1.5 py-0.5 rounded bg-mahogany-700/95 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-[9px] sm:text-[10px] font-bold tracking-wider shadow-sm">
                       ORIGINAL
                     </span>
                   ` : ''}
                   ${titleTag ? `
-                    <span class="px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-brass-300 border border-brass-400/40 text-[10px] font-semibold shadow-sm">
+                    <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-brass-300 border border-brass-400/40 text-[10px] font-semibold shadow-sm max-w-[140px] truncate">
                       <i class="fa-solid fa-music mr-1 text-[9px]"></i>${escapeHtml(titleTag.name)}
                     </span>
                   ` : ''}
                 </div>
 
-                <span class="px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-xs text-parchment-100 text-[10px] font-semibold shadow-sm shrink-0">
-                  <i class="fa-solid fa-headphones mr-1 text-brass-400"></i>${myCount}회
+                <span class="px-1.5 py-0.5 sm:px-2 rounded bg-black/75 backdrop-blur-xs text-parchment-100 text-[9px] sm:text-[10px] font-semibold shadow-sm shrink-0">
+                  <i class="fa-solid fa-headphones mr-0.5 sm:mr-1 text-brass-400"></i>${myCount}회
                 </span>
               </div>
 
               <!-- 하단 호버 안내 뱃지 -->
-              <div class="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/75 text-[10px] text-parchment-200 opacity-90 group-hover:opacity-0 transition-opacity pointer-events-none">
+              <div class="hidden sm:block absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/75 text-[10px] text-parchment-200 opacity-90 group-hover:opacity-0 transition-opacity pointer-events-none">
                 <i class="fa-solid fa-play mr-1 text-brass-400"></i>커서 올리면 미리보기
               </div>
             </div>
 
             <!-- 카드 본문 -->
-            <div class="p-4 space-y-2">
-              <h3 class="font-serif text-base sm:text-lg font-bold text-mahogany-800 dark:text-[#F5E9DA] line-clamp-1 group-hover:text-mahogany-600 dark:group-hover:text-brass-400 transition-colors">
+            <div class="p-2.5 sm:p-4 space-y-1 sm:space-y-2">
+              <h3 class="font-serif text-xs sm:text-base lg:text-lg font-bold text-mahogany-800 dark:text-[#F5E9DA] line-clamp-2 sm:line-clamp-1 group-hover:text-mahogany-600 dark:group-hover:text-brass-400 transition-colors leading-snug">
                 ${escapeHtml(song.title)}
               </h3>
 
               ${song.memo ? `
-                <p class="text-xs text-[#6D5444] dark:text-[#B8A392] line-clamp-1">
+                <p class="text-[11px] sm:text-xs text-[#6D5444] dark:text-[#B8A392] line-clamp-1">
                   <i class="fa-regular fa-note-sticky mr-1 text-brass-600 dark:text-brass-500"></i>${escapeHtml(song.memo)}
                 </p>
               ` : `
-                <p class="text-xs text-[#9E8777] dark:text-[#6E5B4D] italic">메모 없음</p>
+                <p class="hidden sm:block text-xs text-[#9E8777] dark:text-[#6E5B4D] italic">메모 없음</p>
               `}
             </div>
           </div>
 
           <!-- 하단 태그 칩 목록 -->
-          <div class="px-4 pb-4 pt-1 flex flex-wrap gap-1.5">
-            ${normalTags.length > 0 ? normalTags.slice(0, 5).map(tag => `
+          <div class="px-2.5 pb-2.5 sm:px-4 sm:pb-4 pt-0.5 flex flex-wrap gap-1 sm:gap-1.5">
+            ${normalTags.length > 0 ? normalTags.slice(0, 4).map(tag => `
               <span onclick="event.stopPropagation(); toggleFilterTag('${escapeHtml(tag.id)}')"
-                class="px-2 py-0.5 rounded-md text-[11px] font-medium border transition ${getTagBadgeStyle(tag.category)}">
+                class="px-1.5 py-0.5 sm:px-2 rounded text-[10px] sm:text-[11px] font-medium border transition truncate max-w-full ${getTagBadgeStyle(tag.category)}">
                 #${escapeHtml(tag.name)}
               </span>
             `).join('') : `
-              <span class="text-[11px] text-[#9E8777] dark:text-[#6E5B4D]">태그 없음</span>
+              <span class="text-[10px] sm:text-[11px] text-[#9E8777] dark:text-[#6E5B4D]">태그 없음</span>
             `}
           </div>
         </article>
@@ -1549,7 +1647,6 @@
       }
     }
 
-    // 초경량 On-Demand 마우스 호버 유튜브 미리보기 (커서 올릴 때만 iframe 생성, 떼면 즉시 제거)
     window.startCardPreview = function(cardEl, videoId) {
       const slot = cardEl.querySelector('.preview-slot');
       if (!slot || !videoId) return;
@@ -1577,8 +1674,8 @@
       }
     };
 
-    // 카테고리별 태그 필터 바 렌더링
     function renderFilterBars() {
+      const quickQuery = (document.getElementById('filterTagQuickSearch')?.value || '').trim().toLowerCase();
       const categories = [
         { key: 'songTitle', containerId: 'filterTagsSongTitle' },
         { key: 'artist', containerId: 'filterTagsArtist' },
@@ -1588,13 +1685,33 @@
 
       for (const cat of categories) {
         const container = document.getElementById(cat.containerId);
+        const btnWrap = document.getElementById(`moreBtnWrap-${cat.key}`);
         if (!container) continue;
-        const catTags = state.tags.filter(t => t.category === cat.key);
+
+        let catTags = state.tags
+          .filter(t => t.category === cat.key)
+          .sort((a, b) => {
+            const aSel = state.selectedFilterTagIds.has(a.id) ? 1 : 0;
+            const bSel = state.selectedFilterTagIds.has(b.id) ? 1 : 0;
+            if (bSel !== aSel) return bSel - aSel;
+            return (a.name || '').localeCompare(b.name || '', 'ko');
+          });
+
+        if (quickQuery) {
+          catTags = catTags.filter(t => (t.name || '').toLowerCase().includes(quickQuery));
+        }
+
         if (catTags.length === 0) {
-          container.innerHTML = `<span class="text-xs text-[#9E8777] dark:text-[#6E5B4D] italic">등록된 태그 없음</span>`;
+          container.classList.remove('tag-row-clamped');
+          container.innerHTML = `<span class="text-xs text-[#9E8777] dark:text-[#6E5B4D] italic">${quickQuery ? '검색 결과 없음' : '등록된 태그 없음'}</span>`;
+          if (btnWrap) {
+            btnWrap.classList.add('hidden');
+            btnWrap.innerHTML = '';
+          }
           continue;
         }
 
+        container.classList.remove('tag-row-clamped');
         container.innerHTML = catTags.map(tag => {
           const active = state.selectedFilterTagIds.has(tag.id);
           const activeClass = active
@@ -1607,8 +1724,53 @@
             </button>
           `;
         }).join('');
+
+        const firstChip = container.querySelector('button');
+        const chipHeight = firstChip ? firstChip.offsetHeight : 28;
+        const rowGap = 6;
+        const maxThreeRowsHeight = (chipHeight * 3) + (rowGap * 2) + 4;
+        const isOverflowing = container.scrollHeight > maxThreeRowsHeight;
+        const isExpanded = Boolean(state.expandedFilterCategories[cat.key]) || Boolean(quickQuery);
+
+        if (isOverflowing) {
+          if (!isExpanded) {
+            container.style.maxHeight = `${maxThreeRowsHeight}px`;
+            container.style.overflow = 'hidden';
+          } else {
+            container.style.maxHeight = '';
+            container.style.overflow = '';
+          }
+
+          if (btnWrap && !quickQuery) {
+            btnWrap.classList.remove('hidden');
+            btnWrap.innerHTML = `
+              <button type="button" onclick="toggleCategoryExpand('${cat.key}')"
+                class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-semibold text-mahogany-700 dark:text-brass-400 bg-mahogany-700/10 dark:bg-brass-500/15 hover:bg-mahogany-700/20 dark:hover:bg-brass-500/25 transition">
+                ${isExpanded
+                  ? `<i class="fa-solid fa-chevron-up text-[10px]"></i><span>접기 (3줄만 보기)</span>`
+                  : `<i class="fa-solid fa-chevron-down text-[10px]"></i><span>더보기 (전체 ${catTags.length}개)</span>`
+                }
+              </button>
+            `;
+          } else if (btnWrap) {
+            btnWrap.classList.add('hidden');
+            btnWrap.innerHTML = '';
+          }
+        } else {
+          container.style.maxHeight = '';
+          container.style.overflow = '';
+          if (btnWrap) {
+            btnWrap.classList.add('hidden');
+            btnWrap.innerHTML = '';
+          }
+        }
       }
     }
+
+    window.toggleCategoryExpand = function(categoryKey) {
+      state.expandedFilterCategories[categoryKey] = !state.expandedFilterCategories[categoryKey];
+      renderFilterBars();
+    };
 
     window.toggleFilterTag = function(tagId) {
       if (state.selectedFilterTagIds.has(tagId)) {
@@ -1624,6 +1786,8 @@
       state.selectedFilterTagIds.clear();
       const searchEl = document.getElementById('searchInput');
       if (searchEl) searchEl.value = '';
+      const quickTagSearch = document.getElementById('filterTagQuickSearch');
+      if (quickTagSearch) quickTagSearch.value = '';
       renderFilterBars();
       renderLibrary();
     };
@@ -1657,7 +1821,6 @@
         }
       }
 
-      // 공백으로 구분된 다중 키워드 및 '#' 접두사 제거 검색 지원
       const tokens = rawQuery
         .split(/\s+/)
         .map(tok => tok.replace(/^#+/, ''))
@@ -1667,12 +1830,10 @@
         const songAllTagIds = new Set(song.tagIds || []);
         if (song.songTitleTagId) songAllTagIds.add(song.songTitleTagId);
 
-        // 선택된 모든 태그 포함 여부 확인
         for (const reqTagId of state.selectedFilterTagIds) {
           if (!songAllTagIds.has(reqTagId)) return false;
         }
 
-        // 텍스트 검색어 필터 (곡 제목, 메모, 연결된 모든 태그 이름 포함)
         if (tokens.length > 0) {
           const titleText = (song.title || '').toLowerCase();
           const memoText = (song.memo || '').toLowerCase();
@@ -1711,7 +1872,7 @@
     const renderLibrary = window.renderLibrary;
 
     // =========================================================================
-    // 6. 노래 추가 / 수정 모달 & 노래 제목 태그 자동완성 / 직접 등록
+    // 6. 노래 추가 / 수정 모달 & 태그 실시간 검색 / 자동완성 / 직접 등록
     // =========================================================================
     window.openSongFormModal = function(songId = null) {
       const formTitle = document.getElementById('songFormTitle');
@@ -1721,9 +1882,11 @@
       const memoInput = document.getElementById('songMemoInput');
       const originalCb = document.getElementById('isOriginalCheckbox');
       const searchInput = document.getElementById('songTitleTagSearchInput');
+      const formTagSearch = document.getElementById('formTagSearchInput');
 
       closeNewTitleTagBox();
       if (searchInput) searchInput.value = '';
+      if (formTagSearch) formTagSearch.value = '';
       document.getElementById('titleTagAutocompleteList')?.classList.add('hidden');
 
       if (songId) {
@@ -1757,17 +1920,17 @@
       const box = document.getElementById('selectedTitleTagDisplay');
       if (!box) return;
       if (!state.formSelectedSongTitleTagId) {
-        box.innerHTML = `<span class="text-[11px] text-[#8C7362] italic">연결된 노래 제목 태그가 없습니다. 아래에서 검색해 선택하거나 새로 추가하세요.</span>`;
+        box.innerHTML = `<span class="text-xs text-[#8C7362] italic">연결된 노래 제목 태그가 없습니다. 아래에서 검색해 선택하거나 새로 추가하세요.</span>`;
         return;
       }
       const tag = state.tags.find(t => t.id === state.formSelectedSongTitleTagId);
       if (!tag) {
         state.formSelectedSongTitleTagId = null;
-        box.innerHTML = `<span class="text-[11px] text-[#8C7362] italic">연결된 노래 제목 태그가 없습니다.</span>`;
+        box.innerHTML = `<span class="text-xs text-[#8C7362] italic">연결된 노래 제목 태그가 없습니다.</span>`;
         return;
       }
       box.innerHTML = `
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-mahogany-700 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-xs font-semibold shadow-xs">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-mahogany-700 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-xs sm:text-sm font-semibold shadow-xs">
           <i class="fa-solid fa-music text-[10px]"></i>
           <span>#${escapeHtml(tag.name)}</span>
           <button type="button" onclick="clearSelectedSongTitleTag()" class="ml-1 hover:opacity-75" title="연결 해제">
@@ -1797,18 +1960,18 @@
 
       if (matched.length === 0) {
         listEl.innerHTML = `
-          <div class="px-3 py-2 text-xs text-[#8C7362]">
+          <div class="px-3.5 py-2.5 text-xs text-[#8C7362]">
             일치하는 노래 제목 태그가 없습니다. 우측 <strong>[+ 새 제목 태그 추가]</strong> 버튼으로 새로 만들어 보세요.
           </div>
         `;
       } else {
         listEl.innerHTML = matched.map(t => `
           <button type="button" onclick="selectSongTitleTag('${escapeHtml(t.id)}')"
-            class="w-full text-left px-3 py-2 text-xs hover:bg-parchment-100 dark:hover:bg-espresso-800 flex items-center justify-between transition">
+            class="w-full text-left px-3.5 py-2.5 text-xs sm:text-sm hover:bg-parchment-100 dark:hover:bg-espresso-800 flex items-center justify-between transition">
             <span class="font-medium text-mahogany-800 dark:text-[#F5E9DA]">
               <i class="fa-solid fa-music mr-1.5 text-brass-500"></i>#${escapeHtml(t.name)}
             </span>
-            ${state.formSelectedSongTitleTagId === t.id ? '<span class="text-[10px] text-brass-500 font-bold">선택됨</span>' : ''}
+            ${state.formSelectedSongTitleTagId === t.id ? '<span class="text-xs text-brass-500 font-bold">선택됨</span>' : ''}
           </button>
         `).join('');
       }
@@ -1849,7 +2012,6 @@
         return;
       }
 
-      // 이미 같은 이름의 노래 제목 태그가 있으면 바로 선택
       const existing = state.tags.find(
         t => t.category === 'songTitle' && t.name.toLowerCase() === name.toLowerCase()
       );
@@ -1875,7 +2037,52 @@
       }
     };
 
+    window.clearFormTagSearch = function() {
+      const inp = document.getElementById('formTagSearchInput');
+      if (inp) {
+        inp.value = '';
+        inp.focus();
+      }
+      renderSongFormTagSelectors();
+    };
+
+    function renderFormSelectedTagsSummary() {
+      const summaryEl = document.getElementById('formSelectedTagsSummary');
+      if (!summaryEl) return;
+
+      const selectedList = Array.from(state.formSelectedTagIds)
+        .map(id => state.tags.find(t => t.id === id))
+        .filter(Boolean);
+
+      if (selectedList.length === 0) {
+        summaryEl.innerHTML = `<span class="text-xs text-[#8C7362] italic">선택된 태그가 없습니다. 아래에서 검색하거나 클릭해 선택하세요.</span>`;
+        return;
+      }
+
+      summaryEl.innerHTML = `
+        <span class="text-xs font-semibold text-mahogany-700 dark:text-brass-400 mr-1">선택됨 (${selectedList.length}):</span>
+        ${selectedList.map(tag => `
+          <button type="button" onclick="toggleFormTagSelection('${escapeHtml(tag.id)}')"
+            class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-mahogany-700 dark:bg-brass-500 text-parchment-50 dark:text-espresso-950 text-xs font-semibold shadow-2xs hover:opacity-85 transition">
+            <span>#${escapeHtml(tag.name)}</span>
+            <i class="fa-solid fa-xmark text-[10px]"></i>
+          </button>
+        `).join('')}
+      `;
+    }
+
     function renderSongFormTagSelectors() {
+      const searchInput = document.getElementById('formTagSearchInput');
+      const clearBtn = document.getElementById('clearFormTagSearchBtn');
+      const query = (searchInput?.value || '').trim().replace(/^#+/, '').toLowerCase();
+
+      if (clearBtn) {
+        if (query.length > 0) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+      }
+
+      renderFormSelectedTagsSummary();
+
       const groups = [
         { key: 'artist', containerId: 'formTagsArtist' },
         { key: 'cover', containerId: 'formTagsCover' },
@@ -1885,19 +2092,28 @@
       for (const grp of groups) {
         const container = document.getElementById(grp.containerId);
         if (!container) continue;
-        const catTags = state.tags.filter(t => t.category === grp.key);
+
+        let catTags = state.tags
+          .filter(t => t.category === grp.key)
+          .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'));
+
+        if (query) {
+          catTags = catTags.filter(t => (t.name || '').toLowerCase().includes(query));
+        }
+
         if (catTags.length === 0) {
-          container.innerHTML = `<span class="text-[11px] text-[#9E8777] italic">없음</span>`;
+          container.innerHTML = `<span class="text-xs text-[#9E8777] italic">${query ? '검색 결과 없음' : '없음'}</span>`;
           continue;
         }
+
         container.innerHTML = catTags.map(tag => {
           const selected = state.formSelectedTagIds.has(tag.id);
           const cls = selected
-            ? 'bg-mahogany-700 text-white border-mahogany-700 dark:bg-brass-500 dark:text-espresso-950 dark:border-brass-500 font-semibold'
+            ? 'bg-mahogany-700 text-white border-mahogany-700 dark:bg-brass-500 dark:text-espresso-950 dark:border-brass-500 font-semibold shadow-2xs'
             : 'bg-white dark:bg-espresso-900 text-[#5C4537] dark:text-[#C8B6A6] border-parchment-300 dark:border-espresso-700 hover:border-brass-500';
           return `
             <button type="button" onclick="toggleFormTagSelection('${escapeHtml(tag.id)}')"
-              class="px-2.5 py-1 rounded-full border text-xs transition ${cls}">
+              class="px-3 py-1 rounded-full border text-xs sm:text-sm transition ${cls}">
               #${escapeHtml(tag.name)}
             </button>
           `;
@@ -2059,7 +2275,6 @@
       }
 
       try {
-        // 태그 문서의 name만 갱신하면 모든 노래는 tag.id로 참조하므로 전체 노래에 즉시 일괄 반영됨
         await setDoc(publicDoc('tags', tagId), { ...targetTag, name: newName });
         state.editingTagId = null;
         showToast(`태그 이름이 '#${newName}'(으)로 일괄 변경되었습니다.`);
@@ -2072,7 +2287,6 @@
     window.deleteTagFromManager = async function(tagId) {
       try {
         await deleteDoc(publicDoc('tags', tagId));
-        // 연결된 노래들의 tagIds 및 songTitleTagId에서도 정리
         const affectedSongs = state.songs.filter(
           s => (s.tagIds && s.tagIds.includes(tagId)) || s.songTitleTagId === tagId
         );
@@ -2153,7 +2367,6 @@
       const song = state.songs.find(s => s.id === songId);
       if (!song) return;
 
-      // 현재 이용자의 해당 곡 청취 횟수 +1 증가
       const me = getCurrentUser();
       let updatedMyCount = getTotalSongCount(song.id);
       if (me && state.dbReady) {
@@ -2168,7 +2381,6 @@
         }
       }
 
-      // 플레이어 삽입
       const playerBox = document.getElementById('detailPlayerContainer');
       playerBox.innerHTML = `
         <iframe
@@ -2181,7 +2393,6 @@
         </iframe>
       `;
 
-      // 상단 메타 정보 채우기
       const origBadge = document.getElementById('detailOriginalBadge');
       if (song.isOriginal) origBadge.classList.remove('hidden');
       else origBadge.classList.add('hidden');
@@ -2201,7 +2412,6 @@
         memoBox.classList.add('hidden');
       }
 
-      // 부착된 태그 표시
       const tagsContainer = document.getElementById('detailTagsContainer');
       const allTagObjs = [];
       if (song.songTitleTagId) {
@@ -2218,7 +2428,6 @@
         </span>
       `).join('');
 
-      // 같은 노래 제목 태그를 공유하는 연관 버전(원곡 최상단) 미니 리스트 렌더링
       const relatedSec = document.getElementById('relatedVersionsSection');
       const relatedList = document.getElementById('relatedVersionsList');
       const relatedTitleEl = document.getElementById('relatedSectionTitle');
@@ -2229,7 +2438,6 @@
         const siblings = state.songs
           .filter(s => s.songTitleTagId === song.songTitleTagId)
           .sort((a, b) => {
-            // 원곡(isOriginal === true)이 무조건 최상단
             if (Boolean(b.isOriginal) !== Boolean(a.isOriginal)) {
               return (b.isOriginal ? 1 : 0) - (a.isOriginal ? 1 : 0);
             }
@@ -2276,7 +2484,6 @@
         relatedSec.classList.add('hidden');
       }
 
-      // 하단 유튜브 링크 & 수정 / 삭제 버튼 연결
       document.getElementById('detailYoutubeLink').href = `https://www.youtube.com/watch?v=${encodeURIComponent(song.videoId)}`;
       document.getElementById('detailEditBtn').onclick = () => {
         closeDetailModal();
@@ -2315,7 +2522,7 @@
     }
 
     // =========================================================================
-    // 9. 관리자(Admin) 패널 (이용자 계정 발급/권한/삭제 및 이용자별 청취 횟수 제어)
+    // 9. 관리자(Admin) 패널
     // =========================================================================
     window.openAdminModal = function() {
       const me = getCurrentUser();
@@ -2498,7 +2705,7 @@
     };
 
     // =========================================================================
-    // 10. JSON 백업 내보내기 / 불러오기
+    // 10. JSON 백업 내보내기 / JSON 파일로 추가(기존 데이터 유지 + 중복 제외 병합)
     // =========================================================================
     window.exportData = function() {
       const payload = {
@@ -2524,17 +2731,82 @@
       reader.onload = async (e) => {
         try {
           const parsed = JSON.parse(e.target.result);
+          showToast('기존 곡을 유지하며 JSON 데이터를 병합하는 중...');
+
+          // 1) 태그 병합 (기존 태그 유지 + 같은 카테고리/이름 태그는 기존 ID로 자동 매핑)
+          const tagIdRemap = {}; // importedTagId -> finalTagId
+          const existingTagLookup = new Map();
+          for (const t of state.tags) {
+            existingTagLookup.set(`${t.category}::${(t.name || '').trim().toLowerCase()}`, t.id);
+          }
+
+          let addedTagsCount = 0;
           if (Array.isArray(parsed.tags)) {
             for (const tag of parsed.tags) {
-              if (tag && tag.id) await setDoc(publicDoc('tags', tag.id), tag);
+              if (!tag || !tag.id || !tag.name) continue;
+              const lookupKey = `${tag.category}::${tag.name.trim().toLowerCase()}`;
+              if (existingTagLookup.has(lookupKey)) {
+                tagIdRemap[tag.id] = existingTagLookup.get(lookupKey);
+              } else {
+                const targetId = state.tags.some(t => t.id === tag.id) ? generateId('tag') : tag.id;
+                await setDoc(publicDoc('tags', targetId), {
+                  id: targetId,
+                  name: tag.name.trim(),
+                  category: tag.category || 'genre'
+                });
+                existingTagLookup.set(lookupKey, targetId);
+                tagIdRemap[tag.id] = targetId;
+                addedTagsCount++;
+              }
             }
           }
+
+          // 2) 노래 병합 (기존 노래 절대 유지 + 동일 videoId 중복 제외하고 새 노래만 추가)
+          const existingVideoIds = new Set(state.songs.map(s => (s.videoId || '').trim()));
+          const existingSongIds = new Set(state.songs.map(s => s.id));
+          let addedSongsCount = 0;
+          let skippedSongsCount = 0;
+
           if (Array.isArray(parsed.songs)) {
             for (const song of parsed.songs) {
-              if (song && song.id) await setDoc(publicDoc('songs', song.id), song);
+              if (!song || !song.videoId) continue;
+              const cleanVid = song.videoId.trim();
+              if (existingVideoIds.has(cleanVid)) {
+                skippedSongsCount++;
+                continue;
+              }
+
+              const targetSongId = existingSongIds.has(song.id) ? generateId('song') : (song.id || generateId('song'));
+              const remappedTagIds = Array.from(new Set(
+                (song.tagIds || [])
+                  .map(tid => tagIdRemap[tid] || tid)
+                  .filter(Boolean)
+              ));
+              const remappedTitleTagId = song.songTitleTagId
+                ? (tagIdRemap[song.songTitleTagId] || song.songTitleTagId)
+                : null;
+
+              await setDoc(publicDoc('songs', targetSongId), {
+                id: targetSongId,
+                title: song.title || '제목 없음',
+                videoId: cleanVid,
+                memo: song.memo || '',
+                tagIds: remappedTagIds,
+                songTitleTagId: remappedTitleTagId,
+                isOriginal: Boolean(song.isOriginal),
+                createdAt: song.createdAt || Date.now()
+              });
+
+              existingVideoIds.add(cleanVid);
+              existingSongIds.add(targetSongId);
+              addedSongsCount++;
             }
           }
-          showToast('백업 파일에서 노래와 태그를 복원했습니다.');
+
+          showToast(
+            `기존 곡 유지 완료! 새 노래 ${addedSongsCount}곡 추가` +
+            (skippedSongsCount > 0 ? ` (중복 ${skippedSongsCount}곡 제외)` : '')
+          );
         } catch (err) {
           console.error('Import JSON error:', err);
           showToast('올바른 JSON 백업 파일이 아닙니다.', true);
@@ -2546,7 +2818,7 @@
     };
 
     // =========================================================================
-    // 11. 초기 실행 (테마 복원, 검색창 바인딩, 실시간 DB 연결)
+    // 11. 초기 실행 (테마·배율 복원, 검색창 바인딩, 실시간 DB 연결)
     // =========================================================================
     document.addEventListener('click', (e) => {
       const dropdown = document.getElementById('titleTagAutocompleteList');
@@ -2555,6 +2827,13 @@
         dropdown.classList.add('hidden');
       }
     });
+
+    window.addEventListener('resize', () => {
+      if (state.tags.length > 0) renderFilterBars();
+    });
+
+    const savedScale = localStorage.getItem(SCALE_STORAGE_KEY) || 'md';
+    setUiScale(savedScale);
 
     const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
     if (savedTheme === 'dark') {
