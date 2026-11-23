@@ -408,9 +408,24 @@
     <section aria-labelledby="library-heading" class="space-y-5 sm:space-y-6">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3.5">
         <div>
-          <h2 id="library-heading" class="font-serif text-xl sm:text-2xl font-bold text-mahogany-800 dark:text-[#F5E9DA]">
-            전체 레코드 보관함
-          </h2>
+          <div class="flex items-center gap-2.5 flex-wrap">
+            <h2 id="library-heading" class="font-serif text-xl sm:text-2xl font-bold text-mahogany-800 dark:text-[#F5E9DA]">
+              전체 레코드 보관함
+            </h2>
+            <!-- 정렬 / 보기 모드 전환 탭 (아티스트별 묶어보기 / 최신순 전체보기) -->
+            <div class="inline-flex items-center p-0.5 rounded-xl border border-parchment-300 dark:border-espresso-700 bg-parchment-100 dark:bg-espresso-850 text-xs font-semibold shadow-2xs">
+              <button type="button" id="viewModeArtistBtn" onclick="setLibraryViewMode('artist')"
+                class="px-2.5 py-1 rounded-lg bg-mahogany-700 text-parchment-50 dark:bg-brass-600 dark:text-espresso-950 transition flex items-center gap-1">
+                <i class="fa-solid fa-layer-group text-[11px]"></i>
+                <span>아티스트별 묶음</span>
+              </button>
+              <button type="button" id="viewModeAllBtn" onclick="setLibraryViewMode('all')"
+                class="px-2.5 py-1 rounded-lg text-[#6D5444] dark:text-[#A38E7D] hover:text-mahogany-800 dark:hover:text-white transition flex items-center gap-1">
+                <i class="fa-solid fa-grip text-[11px]"></i>
+                <span>최신순 전체</span>
+              </button>
+            </div>
+          </div>
           <p class="text-xs text-[#7A6252] dark:text-[#A38E7D] mt-1">
             노래 카드를 클릭하면 상세 감상 및 원곡·커버 연결 목록을 볼 수 있습니다.
           </p>
@@ -511,8 +526,8 @@
         </div>
       </div>
 
-      <!-- 전체 노래 그리드 (모바일에서도 가로 2열 grid-cols-2 적용!) -->
-      <div id="allSongsGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6">
+      <!-- 전체 노래 그리드 (아티스트별 그룹 묶음 또는 전체 그리드 동적 렌더링) -->
+      <div id="allSongsGrid" class="space-y-8">
         <!-- JS로 동적 렌더링 -->
       </div>
     </section>
@@ -1056,6 +1071,7 @@
       formSelectedTagIds: new Set(),
       formSelectedSongTitleTagId: null,
       editingTagId: null,
+      libraryViewMode: 'artist', // 'artist' (아티스트별 묶어보기) | 'all' (최신순 전체)
       darkMode: false,
       uiScale: 'md'       // 'sm' | 'md' | 'lg'
     };
@@ -1801,6 +1817,57 @@
       renderLibrary();
     };
 
+    window.setLibraryViewMode = function(mode) {
+      state.libraryViewMode = mode === 'all' ? 'all' : 'artist';
+      const artistBtn = document.getElementById('viewModeArtistBtn');
+      const allBtn = document.getElementById('viewModeAllBtn');
+      const activeCls = 'px-2.5 py-1 rounded-lg bg-mahogany-700 text-parchment-50 dark:bg-brass-600 dark:text-espresso-950 transition flex items-center gap-1 shadow-2xs';
+      const inactiveCls = 'px-2.5 py-1 rounded-lg text-[#6D5444] dark:text-[#A38E7D] hover:text-mahogany-800 dark:hover:text-white transition flex items-center gap-1';
+
+      if (artistBtn && allBtn) {
+        artistBtn.className = state.libraryViewMode === 'artist' ? activeCls : inactiveCls;
+        allBtn.className = state.libraryViewMode === 'all' ? activeCls : inactiveCls;
+      }
+      renderLibrary(false);
+    };
+
+    /**
+     * 곡의 대표 아티스트 그룹 키와 표시 이름을 결정합니다.
+     * 1) 곡 자체에 'artist' 카테고리 태그가 있으면 해당 아티스트를 반환
+     * 2) 커버곡이라 'artist' 태그가 없더라도 같은 songTitleTagId를 공유하는 원곡에 아티스트 태그가 있으면 자동 연결
+     * 3) 아티스트 태그가 전혀 없으면 '미분류 / 기타' 그룹으로 묶음
+     */
+    function resolveSongArtists(song) {
+      const tagMap = new Map(state.tags.map(t => [t.id, t]));
+      const directArtists = (song.tagIds || [])
+        .map(tid => tagMap.get(tid))
+        .filter(t => t && t.category === 'artist');
+
+      if (directArtists.length > 0) {
+        return directArtists.map(t => ({ key: t.id, name: t.name }));
+      }
+
+      if (song.songTitleTagId) {
+        const siblingSongs = state.songs.filter(s => s.songTitleTagId === song.songTitleTagId);
+        const inheritedArtists = [];
+        const seenIds = new Set();
+        for (const sib of siblingSongs) {
+          for (const tid of (sib.tagIds || [])) {
+            const t = tagMap.get(tid);
+            if (t && t.category === 'artist' && !seenIds.has(t.id)) {
+              seenIds.add(t.id);
+              inheritedArtists.push({ key: t.id, name: t.name });
+            }
+          }
+        }
+        if (inheritedArtists.length > 0) {
+          return inheritedArtists;
+        }
+      }
+
+      return [{ key: '__unassigned_artist__', name: '아티스트 미지정 / 기타' }];
+    }
+
     window.renderLibrary = function(isExplicitSubmit = false) {
       const grid = document.getElementById('allSongsGrid');
       const countBadge = document.getElementById('resultCountBadge');
@@ -1858,8 +1925,9 @@
 
       if (!grid) return;
       if (filtered.length === 0) {
+        grid.className = 'w-full';
         grid.innerHTML = `
-          <div class="col-span-full py-16 text-center rounded-2xl border border-dashed border-parchment-300 dark:border-espresso-700 space-y-2">
+          <div class="py-16 text-center rounded-2xl border border-dashed border-parchment-300 dark:border-espresso-700 space-y-2">
             <i class="fa-solid fa-record-vinyl text-3xl text-[#8C7362]/60"></i>
             <p class="text-sm text-[#7A6252] dark:text-[#A38E7D]">조건에 일치하는 노래가 없습니다.</p>
           </div>
@@ -1867,7 +1935,82 @@
         return;
       }
 
-      grid.innerHTML = filtered.map(song => buildSongCardHtml(song, { isCarousel: false })).join('');
+      // 모드 1: 최신순 전체 그리드 보기
+      if (state.libraryViewMode === 'all') {
+        grid.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-6';
+        grid.innerHTML = filtered.map(song => buildSongCardHtml(song, { isCarousel: false })).join('');
+        return;
+      }
+
+      // 모드 2: 같은 아티스트끼리 묶어보기 (기본값)
+      grid.className = 'space-y-8 sm:space-y-10';
+      const groupMap = new Map();
+
+      for (const song of filtered) {
+        const artists = resolveSongArtists(song);
+        for (const art of artists) {
+          if (!groupMap.has(art.key)) {
+            groupMap.set(art.key, {
+              key: art.key,
+              name: art.name,
+              songs: []
+            });
+          }
+          groupMap.get(art.key).songs.push(song);
+        }
+      }
+
+      // 아티스트 그룹 정렬: 미지정 그룹은 맨 뒤로, 나머지는 가나다/알파벳 순 정렬
+      const groups = Array.from(groupMap.values()).sort((a, b) => {
+        if (a.key === '__unassigned_artist__') return 1;
+        if (b.key === '__unassigned_artist__') return -1;
+        return a.name.localeCompare(b.name, 'ko');
+      });
+
+      grid.innerHTML = groups.map(grp => {
+        // 각 아티스트 그룹 내부에서는 원곡(Original)을 앞쪽에 배치하고, 같은 곡 제목끼리 나란히 정렬
+        const sortedGroupSongs = [...grp.songs].sort((a, b) => {
+          const titleA = a.songTitleTagId || a.title || '';
+          const titleB = b.songTitleTagId || b.title || '';
+          if (titleA !== titleB) return titleA.localeCompare(titleB, 'ko');
+          if (Boolean(b.isOriginal) !== Boolean(a.isOriginal)) {
+            return (b.isOriginal ? 1 : 0) - (a.isOriginal ? 1 : 0);
+          }
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+
+        const isUnassigned = grp.key === '__unassigned_artist__';
+        return `
+          <div class="rounded-2xl border border-parchment-200/90 dark:border-espresso-700/80 bg-parchment-100/40 dark:bg-espresso-900/45 p-3.5 sm:p-5 space-y-3.5 sm:space-y-4">
+            <!-- 아티스트 그룹 헤더 -->
+            <div class="flex items-center justify-between gap-2 pb-2.5 border-b border-parchment-200 dark:border-espresso-800">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-8 h-8 rounded-xl ${isUnassigned ? 'bg-stone-600/20 text-stone-700 dark:text-stone-300' : 'bg-mahogany-700 dark:bg-brass-600 text-parchment-50 dark:text-espresso-950'} flex items-center justify-center shrink-0 shadow-2xs">
+                  <i class="fa-solid ${isUnassigned ? 'fa-compact-disc' : 'fa-microphone-lines'} text-xs sm:text-sm"></i>
+                </span>
+                <h3 class="font-serif text-base sm:text-xl font-bold text-mahogany-800 dark:text-[#F5E9DA] truncate">
+                  ${escapeHtml(grp.name)}
+                </h3>
+                <span class="px-2 py-0.5 rounded-full bg-mahogany-700/10 dark:bg-brass-500/15 text-mahogany-800 dark:text-brass-400 text-xs font-semibold shrink-0">
+                  ${sortedGroupSongs.length}곡
+                </span>
+              </div>
+
+              ${!isUnassigned ? `
+                <button type="button" onclick="toggleFilterTag('${escapeHtml(grp.key)}')"
+                  class="px-2.5 py-1 rounded-lg border border-parchment-300 dark:border-espresso-700 bg-white/80 dark:bg-espresso-850 hover:border-brass-500 text-[11px] font-medium text-[#6D5444] dark:text-[#C8B6A6] transition shrink-0">
+                  ${state.selectedFilterTagIds.has(grp.key) ? '필터 해제' : '이 아티스트만 보기'}
+                </button>
+              ` : ''}
+            </div>
+
+            <!-- 아티스트 소속 곡 카드 그리드 -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-5">
+              ${sortedGroupSongs.map(song => buildSongCardHtml(song, { isCarousel: false })).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
     };
     const renderLibrary = window.renderLibrary;
 
